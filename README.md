@@ -11,11 +11,15 @@ $ go1.21.0 get -u golang.org/x/tools@latest
 go: upgraded go 1.21.0 => 1.22.0
 ```
 
-## How to use it
+## Installation
 
 ```
 $ go install github.com/lzap/gobump@latest
+```
 
+## Usage
+
+```
 $ cd ~/your_project
 
 $ gobump
