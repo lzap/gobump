@@ -7,7 +7,9 @@ A simple tool which upgrades all direct dependencies one by one ensuring the Go 
 ## How to use it
 
 ```
-# cd your_project
+# go install github.com/lzap/gobump@latest
+
+# cd ~/your_project
 
 # gobump
 go get golang.org/x/sys@latest
