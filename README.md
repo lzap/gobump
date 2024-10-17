@@ -6,9 +6,19 @@ A simple tool which upgrades all direct dependencies one by one ensuring the Go 
 
 ## How to use it
 
-```
-# go install github.com/lzap/gobump@latest
+### Installation
 
+To install `gobump` just run
+
+```
+go install github.com/lzap/gobump@latest
+```
+
+### Usage
+
+Execute `gobump` in you project's directory
+
+```
 # cd ~/your_project
 
 # gobump
