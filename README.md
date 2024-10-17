@@ -44,7 +44,7 @@ go get cloud.google.com/go/compute@latest
 go get cloud.google.com/go/storage@latest
 ```
 
-The above command upgraded all dependencies except `golang.org/x/tools` which would have increase Go requirement.
+The above command upgraded all dependencies except `golang.org/x/tools` which would have increased Go requirement.
 
 ## How it works
 
