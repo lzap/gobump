@@ -4,14 +4,21 @@ Pins Go version when bumping dependencies.
 
 A simple tool which upgrades all direct dependencies one by one ensuring the Go version statement in `go.mod` is never touched. This is useful if your build infrastructure lags behind the latest and greatest Go version and you are unable to upgrade yet, for example when using Red Hat Go Toolset for UBI.
 
+It solves the following problem of `go get -u` pushing for the latest Go version, even if you explicitly use a specific version of Go:
+
+```
+$ go1.21.0 get -u golang.org/x/tools@latest
+go: upgraded go 1.21.0 => 1.22.0
+```
+
 ## How to use it
 
 ```
-# go install github.com/lzap/gobump@latest
+$ go install github.com/lzap/gobump@latest
 
-# cd ~/your_project
+$ cd ~/your_project
 
-# gobump
+$ gobump
 go get golang.org/x/sys@latest
 go get golang.org/x/tools@latest
 go: upgraded go 1.21.0 => 1.22.0
