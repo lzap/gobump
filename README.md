@@ -14,15 +14,24 @@ go: upgraded go 1.21.0 => 1.22.0
 ## Installation
 
 ```
-$ go install github.com/lzap/gobump@latest
+go install github.com/lzap/gobump@latest
 ```
 
 ## Usage
 
 ```
-$ cd ~/your_project
+cd ~/your_project
+```
 
-$ gobump
+The utility currently does not take any arguments:
+
+```
+gobump
+```
+
+Example output:
+
+```
 go get golang.org/x/sys@latest
 go get golang.org/x/tools@latest
 go: upgraded go 1.21.0 => 1.22.0
