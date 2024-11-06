@@ -19,6 +19,7 @@ func main() {
 
 	original := parse()
 	modules := []*modfile.File{original}
+	var goodModules, badModules []string
 
 	for _, r := range original.Require {
 		if !r.Indirect {
@@ -34,18 +35,38 @@ func main() {
 				printerr("upgrade changes required Go version, reverting go.mod")
 				save(lastMod)
 				success = false
-			} else if runTests {
+			}
+
+			if success && runTests {
 				err = cmd(goBinary, "test", "./...")
 				if err != nil {
 					printerr("tests failed, reverting go.mod")
 					save(lastMod)
+					success = false
 				}
-				success = false
 			}
 
 			if success {
 				modules = append(modules, newMod)
+				goodModules = append(goodModules, r.Mod.Path)
+			} else {
+				badModules = append(badModules, r.Mod.Path)
 			}
+		}
+	}
+
+	println()
+	if len(badModules) == 0 {
+		println("All modules are up to date")
+	} else {
+		println("Up to date:")
+		for _, m := range goodModules {
+			println(m)
+		}
+		println()
+		println("Problems:")
+		for _, m := range badModules {
+			println(m)
 		}
 	}
 }

@@ -36,7 +36,7 @@ func cmd(cmd string, args ...string) error {
 	return nil
 }
 
-func print(str ...string) {
+func println(str ...string) {
 	fmt.Println(strings.Join(str, " "))
 }
 
