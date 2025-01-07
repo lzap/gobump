@@ -54,6 +54,24 @@ The above command upgraded all dependencies except `golang.org/x/tools` which wo
 * If the command upgraded Go version in `go.mod`, it reverts to the last version of `go.mod`
 * If the command succeeds, it parses the newly created `go.mod` and continues working on other dependencies
 
+## Uncovered use cases
+
+Sometimes, even `gobump` does not help. Specifically with ambiguous imports in transient dependencies:
+
+```
+go: mypackage imports
+ cloud.google.com/go/storage imports
+  google.golang.org/grpc/stats/opentelemetry: ambiguous import: found package google.golang.org/grpc/stats/opentelemetry in multiple modules:
+  google.golang.org/grpc v1.67.3 (/home/lzap/go/pkg/mod/google.golang.org/grpc@v1.67.3/stats/opentelemetry)
+  google.golang.org/grpc/stats/opentelemetry v0.0.0-20240907200651-3ffb98b2c93a (/home/lzap/go/pkg/mo
+```
+
+In this case, use this trick:
+
+```
+go get google.golang.org/grpc/stats/opentelemetry@none
+```
+
 ## Configuration
 
 It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` environment variable to use a different Go version that is available through `PATH`.
