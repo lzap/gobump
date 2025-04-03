@@ -36,6 +36,23 @@ func cmd(cmd string, args ...string) error {
 	return nil
 }
 
+var ErrCmd = fmt.Errorf("command error")
+
+func cmds(str string) error {
+	parts := strings.Fields(str)
+	if len(parts) == 0 {
+		return fmt.Errorf("%w: no command", ErrCmd)
+	}
+
+	if len(parts) == 1 {
+		return cmd(parts[0])
+	}
+
+	p1 := parts[0]
+	p2 := parts[1:]
+	return cmd(p1, p2...)
+}
+
 func println(str ...string) {
 	fmt.Println(strings.Join(str, " "))
 }

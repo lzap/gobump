@@ -2,10 +2,22 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"golang.org/x/mod/modfile"
 )
+
+type stringSlice []string
+
+func (i *stringSlice) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *stringSlice) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
 
 func main() {
 	goBinary := os.Getenv("GOVERSION")
@@ -13,8 +25,10 @@ func main() {
 		goBinary = "go"
 	}
 
-	var runTests bool
-	flag.BoolVar(&runTests, "test", false, "run tests for each dependency upgrade")
+	var dryRun bool
+	var commands stringSlice
+	flag.BoolVar(&dryRun, "dry-run", false, "revert to original go.mod after running")
+	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
 	flag.Parse()
 
 	original := parse()
@@ -37,12 +51,13 @@ func main() {
 				success = false
 			}
 
-			if success && runTests {
-				err = cmd(goBinary, "test", "./...")
-				if err != nil {
-					printerr("tests failed, reverting go.mod")
-					save(lastMod)
-					success = false
+			if success {
+				for _, c := range commands {
+					if err := cmds(c); err != nil {
+						printerr("tests failed, reverting go.mod")
+						save(lastMod)
+						success = false
+					}
 				}
 			}
 
@@ -64,9 +79,13 @@ func main() {
 			println(m)
 		}
 		println()
-		println("Problems:")
+		println("Unable to bump version:")
 		for _, m := range badModules {
 			println(m)
 		}
+	}
+
+	if dryRun {
+		save(original)
 	}
 }

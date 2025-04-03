@@ -54,7 +54,15 @@ The above command upgraded all dependencies except `golang.org/x/tools` which wo
 * If the command upgraded Go version in `go.mod`, it reverts to the last version of `go.mod`
 * If the command succeeds, it parses the newly created `go.mod` and continues working on other dependencies
 
-## Uncovered use cases
+## Executing build or tests
+
+For every single updated dependency, it is possible to run one or more commands to ensure the project builds or tests are passing. Use `-exec` option multiple times to do that, when such command returns non-zero value it is considered as a failure and that update is rolled back.
+
+```
+gobump -exec "go build ./..." -exec "go test ./..."
+```
+
+## Ambiguous imports
 
 Sometimes, even `gobump` does not help. Specifically with ambiguous imports in transient dependencies:
 
@@ -79,5 +87,4 @@ It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` envir
 ## Planned features
 
 * Major version bumps (find if there is a `/v2`).
-* Run `go test` between updates.
 * Store whole history and show diffs.
