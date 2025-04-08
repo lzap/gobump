@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 
 	"golang.org/x/mod/modfile"
 )
@@ -38,7 +39,7 @@ func main() {
 
 	original := parse()
 	modules := []*modfile.File{original}
-	var goodModules, badModules []string
+	var results []Result
 
 	for _, r := range original.Require {
 		if !r.Indirect {
@@ -66,27 +67,43 @@ func main() {
 				}
 			}
 
+			mi := slices.IndexFunc(newMod.Require, func(re *modfile.Require) bool {
+				return re.Mod.Path == r.Mod.Path
+			})
+			newRequire := newMod.Require[mi]
+
+			result := Result{
+				ModulePath:    r.Mod.Path,
+				MinGoVersion:  newMod.Go.Version,
+				VersionBefore: r.Mod.Version,
+				VersionAfter:  newRequire.Mod.Version,
+			}
 			if success {
 				modules = append(modules, newMod)
-				goodModules = append(goodModules, r.Mod.Path)
+				result.Success = true
 			} else {
-				badModules = append(badModules, r.Mod.Path)
+				result.Success = false
 			}
+			results = append(results, result)
 		}
 	}
 
 	println()
-	if len(badModules) == 0 {
-		println("All modules are up to date")
-	} else {
-		println("Up to date:")
-		for _, m := range goodModules {
-			println(m)
+	println("Summary:")
+	for _, r := range results {
+		action := "skipped"
+		if r.Success {
+			if r.VersionAfter == r.VersionBefore {
+				action = "no action"
+			} else {
+				action = "upgraded"
+			}
 		}
-		println()
-		println("Unable to bump version:")
-		for _, m := range badModules {
-			println(m)
+		if r.VersionAfter != "" && r.VersionAfter != r.VersionBefore && action != "skipped" {
+			println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion), r.VersionBefore, "->", r.VersionAfter)
+		} else {
+			println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion))
+
 		}
 	}
 
