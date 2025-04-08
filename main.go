@@ -19,15 +19,20 @@ func (i *stringSlice) Set(value string) error {
 	return nil
 }
 
+var (
+	dryRun  bool
+	verbose bool
+)
+
 func main() {
 	goBinary := os.Getenv("GOVERSION")
 	if goBinary == "" {
 		goBinary = "go"
 	}
 
-	var dryRun bool
 	var commands stringSlice
 	flag.BoolVar(&dryRun, "dry-run", false, "revert to original go.mod after running")
+	flag.BoolVar(&verbose, "verbose", false, "print more information including stderr of executed commands")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
 	flag.Parse()
 

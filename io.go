@@ -26,7 +26,11 @@ func die(msg string, code ...int) {
 
 func cmd(cmd string, args ...string) error {
 	c := exec.Command(cmd, args...)
-	c.Stdout = os.Stdout
+	if verbose {
+		c.Stdout = os.Stdout
+	} else {
+		c.Stdout = nil
+	}
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	fmt.Println(cmd, strings.Join(args, " "))
