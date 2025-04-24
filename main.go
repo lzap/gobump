@@ -23,6 +23,9 @@ func (i *stringSlice) Set(value string) error {
 var (
 	dryRun  bool
 	verbose bool
+	format  string
+
+	out Output
 )
 
 func main() {
@@ -31,39 +34,67 @@ func main() {
 		goBinary = "go"
 	}
 
+	defaultFormat := "console"
+	defaultVerbose := false
+	if os.Getenv("GITHUB_ACTIONS")+os.Getenv("GITLAB_CI")+os.Getenv("CIRCLECI") != "" {
+		defaultFormat = "markdown"
+		defaultVerbose = true
+	}
+
 	var commands stringSlice
 	flag.BoolVar(&dryRun, "dry-run", false, "revert to original go.mod after running")
-	flag.BoolVar(&verbose, "verbose", false, "print more information including stderr of executed commands")
+	flag.BoolVar(&verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
+	flag.StringVar(&format, "format", defaultFormat, "output format (console, markdown)")
 	flag.Parse()
+
+	if format == "markdown" {
+		out = &OutputMarkdown{}
+	} else {
+		out = &OutputConsole{}
+	}
+
+	out.Begin()
+	defer out.End()
 
 	original := parse()
 	modules := []*modfile.File{original}
 	var results []Result
 
+	defer func() {
+		if dryRun {
+			save(original)
+		}
+	}()
+
 	for _, r := range original.Require {
 		if !r.Indirect {
+			out.Header(r.Mod.Path)
+			out.BeginPreformatted(goBinary, "get", r.Mod.Path+"@latest")
 			success := true
 			lastMod := modules[len(modules)-1]
 			err := cmd(goBinary, "get", r.Mod.Path+"@latest")
 			newMod := parse()
 			if err != nil {
-				printerr("upgrade unsuccessful, reverting go.mod")
+				out.Error("upgrade unsuccessful, reverting go.mod")
 				save(lastMod)
 				success = false
 			} else if lastMod.Go.Version != newMod.Go.Version {
-				printerr("upgrade changes required Go version, reverting go.mod")
+				out.Error("upgrade changes required Go version, reverting go.mod")
 				save(lastMod)
 				success = false
 			}
+			out.EndPreformatted()
 
 			if success {
 				for _, c := range commands {
+					out.BeginPreformatted(c)
 					if err := cmds(c); err != nil {
-						printerr("tests failed, reverting go.mod")
+						out.Error("tests failed, reverting go.mod")
 						save(lastMod)
 						success = false
 					}
+					out.EndPreformatted()
 				}
 			}
 
@@ -78,36 +109,17 @@ func main() {
 				VersionBefore: r.Mod.Version,
 				VersionAfter:  newRequire.Mod.Version,
 			}
+
 			if success {
 				modules = append(modules, newMod)
 				result.Success = true
 			} else {
 				result.Success = false
 			}
+
 			results = append(results, result)
 		}
 	}
 
-	println()
-	println("Summary:")
-	for _, r := range results {
-		action := "skipped"
-		if r.Success {
-			if r.VersionAfter == r.VersionBefore {
-				action = "no action"
-			} else {
-				action = "upgraded"
-			}
-		}
-		if r.VersionAfter != "" && r.VersionAfter != r.VersionBefore && action != "skipped" {
-			println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion), r.VersionBefore, "->", r.VersionAfter)
-		} else {
-			println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion))
-
-		}
-	}
-
-	if dryRun {
-		save(original)
-	}
+	out.PrintSummary(results)
 }

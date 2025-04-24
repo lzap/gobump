@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -16,24 +15,19 @@ const (
 	ERR_CMD   = iota
 )
 
-func die(msg string, code ...int) {
-	fmt.Fprintln(os.Stderr, msg)
-	if len(code) == 0 {
-		os.Exit(1)
-	}
-	os.Exit(code[0])
-}
-
 func cmd(cmd string, args ...string) error {
+	if verbose {
+		out.Println(cmd, strings.Join(args, " "))
+	}
 	c := exec.Command(cmd, args...)
 	if verbose {
-		c.Stdout = os.Stdout
+		c.Stdout = out
+		c.Stderr = out
 	} else {
 		c.Stdout = nil
+		c.Stderr = nil
 	}
-	c.Stderr = os.Stderr
-	c.Stdin = os.Stdin
-	fmt.Println(cmd, strings.Join(args, " "))
+	c.Stderr = out
 	if err := c.Run(); err != nil {
 		return err
 	}
@@ -55,12 +49,4 @@ func cmds(str string) error {
 	p1 := parts[0]
 	p2 := parts[1:]
 	return cmd(p1, p2...)
-}
-
-func println(str ...string) {
-	fmt.Println(strings.Join(str, " "))
-}
-
-func printerr(str ...string) {
-	fmt.Fprintln(os.Stderr, strings.Join(str, " "))
 }
