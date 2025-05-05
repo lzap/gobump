@@ -49,6 +49,10 @@ func (out *OutputConsole) EndPreformatted(text ...any) {
 	fmt.Println(joinAny(text...))
 }
 
+func (out *OutputConsole) EndPreformattedCond(render bool, text ...any) {
+	out.EndPreformatted(text...)
+}
+
 func (out *OutputConsole) Write(buf []byte) (int, error) {
 	return os.Stdout.Write(buf)
 }

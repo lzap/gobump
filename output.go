@@ -10,6 +10,7 @@ type Output interface {
 	Header(text string)
 	BeginPreformatted(text ...any)
 	EndPreformatted(text ...any)
+	EndPreformattedCond(render bool, text ...any)
 	End(text ...any)
 	Error(str ...string)
 	Fatal(msg string, code ...int)

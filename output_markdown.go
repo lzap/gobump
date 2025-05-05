@@ -1,33 +1,44 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
 
-type OutputMarkdown struct{}
+type OutputMarkdown struct {
+	Destination io.Writer
+	w           io.Writer
+}
 
 var _ Output = (*OutputMarkdown)(nil)
 
+func NewOutputMarkdown(w io.Writer) *OutputMarkdown {
+	return &OutputMarkdown{
+		Destination: w,
+		w:           w,
+	}
+}
+
 func (out *OutputMarkdown) Begin(text ...any) {
 	if len(text) == 0 {
-		fmt.Printf("## Pinned Go version dependency update\n")
-		fmt.Println("")
+		fmt.Fprintf(out.w, "## Pinned Go version dependency update\n")
 		return
 	}
 
-	fmt.Println(joinAny(text...))
+	fmt.Fprintln(out.w, joinAny(text...))
 }
 
 func (out *OutputMarkdown) End(text ...any) {
+	defer fmt.Fprintf(out.w, ":pretzel: *Created with [gobump](https://github.com/lzap/gobump) (%s)* :pretzel:\n", BuildID())
+
 	if len(text) == 0 {
-		fmt.Println("")
-		fmt.Printf(":pretzel: *Created with [gobump](https://github.com/lzap/gobump) (%s)* :pretzel:\n", BuildID())
 		return
 	}
 
-	fmt.Println(joinAny(text...))
+	fmt.Fprintln(out.w, joinAny(text...))
 }
 
 func (out *OutputMarkdown) Header(text string) {
@@ -35,28 +46,52 @@ func (out *OutputMarkdown) Header(text string) {
 		return
 	}
 
-	fmt.Printf("\n### %s\n\n", text)
+	fmt.Fprintf(out.w, "\n### %s\n", text)
 }
 
 func (out *OutputMarkdown) BeginPreformatted(text ...any) {
+	out.w = bytes.NewBuffer(nil)
+
 	if len(text) == 0 {
 		return
 	}
 
-	fmt.Printf("\n<details><summary>%s</summary>\n\n```\n", joinAny(text...))
+	fmt.Fprintf(out.w, "\n<details><summary>%s</summary>\n```\n", joinAny(text...))
 }
 
 func (out *OutputMarkdown) EndPreformatted(text ...any) {
-	if len(text) == 0 {
-		fmt.Printf("```\n</details>\n")
+	out.EndPreformattedCond(true, text...)
+}
+
+func (out *OutputMarkdown) endBuffer(render bool) {
+	if out.w == nil {
 		return
 	}
 
-	fmt.Println(joinAny(text...))
+	buf := out.w.(*bytes.Buffer)
+	out.w = out.Destination
+
+	if buf.Len() > 0 && render {
+		fmt.Fprint(out.w, buf.String())
+	}
+
+	if render {
+		fmt.Fprintf(out.w, "```\n</details>\n")
+	}
+}
+
+func (out *OutputMarkdown) EndPreformattedCond(render bool, text ...any) {
+	defer out.endBuffer(render)
+
+	if len(text) == 0 {
+		return
+	}
+
+	fmt.Fprintln(out.w, joinAny(text...))
 }
 
 func (out *OutputMarkdown) Write(buf []byte) (int, error) {
-	return os.Stdout.Write(buf)
+	return out.w.Write(buf)
 }
 
 func (out *OutputMarkdown) Println(text ...string) {
@@ -64,15 +99,15 @@ func (out *OutputMarkdown) Println(text ...string) {
 		return
 	}
 
-	fmt.Println(strings.Join(text, " "))
+	fmt.Fprintln(out.w, strings.Join(text, " "))
 }
 
 func (out *OutputMarkdown) Error(str ...string) {
-	fmt.Println(color(strings.Join(str, " "), ColorRed))
+	fmt.Fprintln(out.w, color(strings.Join(str, " "), ColorRed))
 }
 
 func (out *OutputMarkdown) Fatal(msg string, code ...int) {
-	fmt.Println(msg)
+	fmt.Fprintln(out.w, msg)
 
 	if len(code) == 0 {
 		os.Exit(1)
@@ -82,9 +117,9 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 }
 
 func (out *OutputMarkdown) PrintSummary(results []Result) {
-	fmt.Printf("\n## Summary\n\n")
-	fmt.Println("|Module|Action|Min Go|Before|After|")
-	fmt.Println("|---|---|---|---|---|")
+	fmt.Fprintf(out.w, "\n## Summary\n\n")
+	fmt.Fprintln(out.w, "|Module|Action|Min Go|Before|After|")
+	fmt.Fprintln(out.w, "|---|---|---|---|---|")
 
 	for _, r := range results {
 		action := "skipped"

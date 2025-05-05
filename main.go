@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	if format == "markdown" {
-		out = &OutputMarkdown{}
+		out = NewOutputMarkdown(os.Stdout)
 	} else {
 		out = &OutputConsole{}
 	}
@@ -84,7 +84,7 @@ func main() {
 				save(lastMod)
 				success = false
 			}
-			out.EndPreformatted()
+			out.EndPreformattedCond(!success)
 
 			if success {
 				for _, c := range commands {
@@ -98,7 +98,7 @@ func main() {
 						save(lastMod)
 						success = false
 					}
-					out.EndPreformatted()
+					out.EndPreformattedCond(!success)
 				}
 			}
 
