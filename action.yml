@@ -7,9 +7,16 @@ inputs:
   exec:
     description: "String to pass via gobump -exec argument (no shell expansion)"
     required: false
+  exec2:
+    description: "Additional string to pass via gobump -exec argument (no shell expansion)"
+    required: false
   labels:
     description: "Comma-separated list of labels to add to the PR"
     required: false
+  tidy:
+    description: "Run go mod tidy after bumping dependencies (default: true)"
+    required: false
+    default: "true"
   setup_go:
     description: "Set up Go environment (default: true)"
     required: false
@@ -34,13 +41,10 @@ runs:
     - name: Bump dependencies
       shell: bash
       run: |
-        if [ -n "${{ inputs.exec }}" ]; then
-          go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" > bump.log
-        else
-          go run github.com/lzap/gobump@latest
-        fi
+        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" > bump.log
 
     - name: Run go mod tidy
+      if: ${{ inputs.tidy == 'true' }}
       shell: bash
       run: |
         go mod tidy

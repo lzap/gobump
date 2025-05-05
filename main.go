@@ -88,6 +88,10 @@ func main() {
 
 			if success {
 				for _, c := range commands {
+					if c == "" {
+						continue
+					}
+
 					out.BeginPreformatted(c)
 					if err := cmds(c); err != nil {
 						out.Error("tests failed, reverting go.mod")
