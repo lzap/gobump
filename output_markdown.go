@@ -68,11 +68,11 @@ func (out *OutputMarkdown) Println(text ...string) {
 }
 
 func (out *OutputMarkdown) Error(str ...string) {
-	fmt.Fprintln(os.Stderr, color(strings.Join(str, " "), ColorRed))
+	fmt.Println(color(strings.Join(str, " "), ColorRed))
 }
 
 func (out *OutputMarkdown) Fatal(msg string, code ...int) {
-	fmt.Fprintln(os.Stderr, msg)
+	fmt.Println(msg)
 
 	if len(code) == 0 {
 		os.Exit(1)
