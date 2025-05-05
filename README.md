@@ -46,6 +46,30 @@ go get cloud.google.com/go/storage@latest
 
 The above command upgraded all dependencies except `golang.org/x/tools` which would have increased Go requirement.
 
+## GitHub Action
+
+```
+name: "Weekly gobump"
+on:
+  schedule:
+    - cron: '13 13 * * SUN'
+  workflow_dispatch:
+
+jobs:
+  bump-deps-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run gobump-deps action
+        uses: lzap/gobump@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exec: "go test ./..."
+          labels: "gobump"
+```
+
 ## How it works
 
 * Loads project `go.mod` and stores it in memory
