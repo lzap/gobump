@@ -9,7 +9,7 @@ const (
 
 var (
 	// Use linker flag to customize it: -X 'github.com/lzap/gobump.buildCommit=1234567
-	buildCommit string
+	buildCommit string = "HEAD"
 
 	// Use linker flag to customize it: -X 'github.com/lzap/gobump.buildTime=2021-01-01T00:00:00Z'
 	buildTime string
