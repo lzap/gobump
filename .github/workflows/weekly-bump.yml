@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run gobump-deps action
-        uses: .
+        uses: ./action.yml
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go test ./..."
