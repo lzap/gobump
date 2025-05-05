@@ -1,0 +1,47 @@
+name: "gobump-deps"
+description: "Bump Go project dependencies using lzap/gobump and open a PR"
+inputs:
+  token:
+    description: "GitHub token with permissions to push branches and open PRs"
+    required: true
+  exec:
+    description: "String to pass via gobump -exec argument (no shell expansion)"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go environment
+      uses: actions/setup-go@v5
+
+    - name: Install gobump
+      shell: bash
+      run: |
+        #echo "GOBIN=$(go env GOPATH)/bin" >> $GITHUB_ENV
+        go install github.com/lzap/gobump@latest
+
+    - name: Bump dependencies
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.exec }}" ]; then
+          ${{ env.GOBIN }}/gobump -exec "${{ inputs.exec }}" > bump.log
+        else
+          ${{ env.GOBIN }}/gobump
+        fi
+
+    - name: Run go mod tidy
+      shell: bash
+      run: |
+        go mod tidy
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ inputs.token }}
+        commit-message: "chore: bump Go dependencies"
+        title: "chore: bump dependencies via gobump"
+        body-file: bump.log
+        branch: "gobump-deps-${{ github.run_id }}"

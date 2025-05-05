@@ -1,0 +1,14 @@
+name: "Weekly Bump"
+on:
+  schedule:
+    - cron: '13 13 * * SUN'
+
+jobs:
+  bump-deps-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run gobump-deps action
+        uses: .
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exec: "go test ./..."
