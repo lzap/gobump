@@ -4,11 +4,11 @@ on:
     - cron: '13 13 * * SUN'
 
 jobs:
-  bump-deps-ubuntu:
+  bump-deps:
     runs-on: ubuntu-latest
     steps:
       - name: Run gobump-deps action
-        uses: ./action.yml
+        uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go test ./..."
