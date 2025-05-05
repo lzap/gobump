@@ -8,6 +8,9 @@ jobs:
   bump-deps-ubuntu:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run gobump-deps action
         uses: ./
         with:
