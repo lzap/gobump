@@ -17,16 +17,15 @@ runs:
     - name: Install gobump
       shell: bash
       run: |
-        #echo "GOBIN=$(go env GOPATH)/bin" >> $GITHUB_ENV
         go install github.com/lzap/gobump@latest
 
     - name: Bump dependencies
       shell: bash
       run: |
         if [ -n "${{ inputs.exec }}" ]; then
-          ${{ env.GOBIN }}/gobump -exec "${{ inputs.exec }}" > bump.log
+          go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" > bump.log
         else
-          ${{ env.GOBIN }}/gobump
+          go run github.com/lzap/gobump@latest
         fi
 
     - name: Run go mod tidy
