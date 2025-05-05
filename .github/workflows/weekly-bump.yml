@@ -16,3 +16,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go test ./..."
+          labels: "fedora"

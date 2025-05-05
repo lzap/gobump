@@ -10,11 +10,20 @@ inputs:
   labels:
     description: "Comma-separated list of labels to add to the PR"
     required: false
+  setup_go:
+    description: "Set up Go environment (default: true)"
+    required: false
+    default: "true"
+  pr:
+    description: "Create a pull request with the changes"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
   steps:
     - name: Set up Go environment
+      if: ${{ inputs.setup_go == 'true' }}
       uses: actions/setup-go@v5
 
     - name: Install gobump
@@ -38,6 +47,7 @@ runs:
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
+      if: ${{ inputs.pr == 'true' }}
       with:
         token: ${{ inputs.token }}
         branch: "gobump-deps-${{ github.run_id }}"

@@ -1,0 +1,44 @@
+name: "Tests"
+on:
+  pull_request:
+    branches:
+      - "*"
+  push:
+    branches:
+      - main  
+  workflow_dispatch:
+
+jobs:
+  bump-deps-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run gobump-deps action
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exec: "go test ./..."
+          labels: "ubuntu"
+          pr: false
+
+  bump-deps-fedora:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:42
+    steps:
+      - name: Set up the environment
+        run: "sudo dnf -y install git gh golang gpgme-devel btrfs-progs-devel krb5-devel"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run gobump-deps action
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exec: "go test ./..."
+          labels: "fedora"
+          pr: false
+          setup_go: false
+  
