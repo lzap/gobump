@@ -7,6 +7,9 @@ inputs:
   exec:
     description: "String to pass via gobump -exec argument (no shell expansion)"
     required: false
+  labels:
+    description: "Comma-separated list of labels to add to the PR"
+    required: false
 
 runs:
   using: "composite"
@@ -37,7 +40,8 @@ runs:
       uses: peter-evans/create-pull-request@v7
       with:
         token: ${{ inputs.token }}
+        branch: "gobump-deps-${{ github.run_id }}"
         commit-message: "chore: bump Go dependencies"
         title: "chore: bump dependencies via gobump"
-        body-file: bump.log
-        branch: "gobump-deps-${{ github.run_id }}"
+        body-path: bump.log
+        labels: ${{ inputs.labels }}
