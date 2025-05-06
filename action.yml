@@ -1,5 +1,8 @@
 name: "gobump-deps"
 description: "Bump Go project dependencies using lzap/gobump and open a PR"
+branding:
+  icon: "box"
+  color: "orange"
 inputs:
   token:
     description: "GitHub token with permissions to push branches and open PRs"
