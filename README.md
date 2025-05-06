@@ -83,6 +83,7 @@ Action input:
 * `exec2`: second optional command to execute for each dependency update
 * `tidy`: set to `false` to avoid executing `go mod tidy` after `gobump`
 * `setup_go`: set to `false` to avoid `setup-go` action (e.g. when container with Go is used)
+* `exec_pr`: optional command to execute before PR is made
 * `pr`: set to `false` to avoid creation of a PR
 * `token`: github token
 * `labels`: comma-separated github PR labels
