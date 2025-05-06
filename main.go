@@ -22,9 +22,11 @@ func (i *stringSlice) Set(value string) error {
 }
 
 var (
-	dryRun  bool
-	verbose bool
-	format  string
+	dryRun   bool
+	verbose  bool
+	format   string
+	gomodsrc string
+	gomoddst string
 
 	out Output
 )
@@ -46,25 +48,29 @@ func main() {
 	flag.BoolVar(&dryRun, "dry-run", false, "revert to original go.mod after running")
 	flag.BoolVar(&verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
-	flag.StringVar(&format, "format", defaultFormat, "output format (console, markdown)")
+	flag.StringVar(&format, "format", defaultFormat, "output format (console, markdown, none)")
+	flag.StringVar(&gomodsrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
+	flag.StringVar(&gomoddst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
 	flag.Parse()
 
 	if format == "markdown" {
 		out = NewOutputMarkdown(os.Stdout)
-	} else {
+	} else if format == "console" {
 		out = &OutputConsole{}
+	} else {
+		out = &OutputNone{}
 	}
 
 	out.Begin()
 	defer out.End()
 
-	original := parse()
+	original := parse(gomodsrc)
 	modules := []*modfile.File{original}
 	var results []Result
 
 	defer func() {
 		if dryRun {
-			save(original)
+			save(gomoddst, original)
 		}
 	}()
 
@@ -75,14 +81,14 @@ func main() {
 			success := true
 			lastMod := modules[len(modules)-1]
 			err := cmd(goBinary, "get", r.Mod.Path+"@latest")
-			newMod := parse()
+			newMod := parse(gomodsrc)
 			if err != nil {
 				out.Error("upgrade unsuccessful, reverting go.mod")
-				save(lastMod)
+				save(gomoddst, lastMod)
 				success = false
 			} else if strings.TrimSuffix(lastMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
 				out.Error("upgrade changes required Go version, reverting go.mod")
-				save(lastMod)
+				save(gomoddst, lastMod)
 				success = false
 			}
 			out.EndPreformattedCond(!success)
@@ -96,7 +102,7 @@ func main() {
 					out.BeginPreformatted(c)
 					if err := cmds(c); err != nil {
 						out.Error("tests failed, reverting go.mod")
-						save(lastMod)
+						save(gomoddst, lastMod)
 						success = false
 					}
 					out.EndPreformattedCond(!success)

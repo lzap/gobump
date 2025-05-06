@@ -1,8 +1,9 @@
 package main
 
 import (
-	"strconv"
-	"strings"
+	"os"
+
+	"golang.org/x/term"
 )
 
 var (
@@ -22,23 +23,14 @@ var (
 	ColorInvert    = "\033[7m"
 )
 
-func color(input any, color ...string) string {
-	var s string
+func color(input string, color ...string) string {
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		return input
+	}
+
 	c := ""
 	for i := range color {
 		c = c + color[i]
 	}
-	switch v := input.(type) {
-	case int:
-		s = c + strconv.Itoa(v) + ColorReset
-	case bool:
-		s = c + strconv.FormatBool(v) + ColorReset
-	case []string:
-		s = c + strings.Join(v, ", ") + ColorReset
-	case string:
-		s = c + v + ColorReset
-	default:
-		panic("unsupported color type")
-	}
-	return s
+	return c + input + ColorReset
 }
