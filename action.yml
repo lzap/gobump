@@ -24,6 +24,9 @@ inputs:
     description: "Set up Go environment (default: true)"
     required: false
     default: "true"
+  exec_pr:
+    description: "Command to execute before PR is made (bash shell)"
+    required: false
   pr:
     description: "Create a pull request with the changes"
     required: false
@@ -51,6 +54,11 @@ runs:
       shell: bash
       run: |
         go mod tidy
+
+    - name: Execute command before PR
+      shell: bash
+      if: ${{ inputs.exec_pr != '' }}
+      run: ${{ inputs.exec_pr }}
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7

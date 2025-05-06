@@ -22,6 +22,7 @@ jobs:
           exec: "go build ."
           exec2: "go test ."
           labels: "ubuntu"
+          exec_pr: "echo 'Running before PR command'"
           pr: false
 
   bump-deps-fedora:
@@ -41,6 +42,7 @@ jobs:
           exec: "go build ."
           exec2: "go test ."
           labels: "fedora"
+          exec_pr: "echo 'Running before PR command'"
           pr: false
           setup_go: false
   
