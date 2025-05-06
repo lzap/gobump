@@ -48,6 +48,8 @@ The above command upgraded all dependencies except `golang.org/x/tools` which wo
 
 ## GitHub Action
 
+The GitHub Action executes `gobump`, then performs `go mod tidy` and files an update PR to the project. Example:
+
 ```
 name: "Weekly gobump"
 on:
@@ -65,10 +67,23 @@ jobs:
       - name: Run gobump-deps action
         uses: lzap/gobump@v1
         with:
+          #setup_go: true
+          #exec: "go test ./..."
+          #tidy: true
+          #pr: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          exec: "go test ./..."
-          labels: "gobump"
+          #labels: "gobump"
 ```
+
+Action input:
+
+* `exec`: optional command to execute for each dependency update
+* `exec2`: second optional command to execute for each dependency update
+* `tidy`: set to `false` to avoid executing `go mod tidy` after `gobump`
+* `setup_go`: set to `false` to avoid `setup-go` action (e.g. when container with Go is used)
+* `pr`: set to `false` to avoid creation of a PR
+* `token`: github token
+* `labels`: comma-separated github PR labels
 
 ## How it works
 
