@@ -126,3 +126,9 @@ go get google.golang.org/grpc/stats/opentelemetry@none
 ## Configuration
 
 It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` environment variable to use a different Go version that is available through `PATH`.
+
+## Discussion
+
+I created a post on reddit if you need to reach out: https://www.reddit.com/r/golang/comments/1kfypws/gobump_update_dependencies_with_pinned_go_version/
+
+Alternatively, create an issue if you find a problem or need a feature.
