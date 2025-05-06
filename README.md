@@ -48,7 +48,9 @@ The above command upgraded all dependencies except `golang.org/x/tools` which wo
 
 ## GitHub Action
 
-The GitHub Action executes `gobump`, then performs `go mod tidy` and files an update PR to the project. Example:
+The GitHub Action executes `gobump`, then performs `go mod tidy` and files an update PR to the project. Example PR: https://github.com/lzap/gobump/pull/7
+
+Example action:
 
 ```
 name: "Weekly gobump"
