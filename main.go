@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	"golang.org/x/mod/modfile"
 )
@@ -79,7 +80,7 @@ func main() {
 				out.Error("upgrade unsuccessful, reverting go.mod")
 				save(lastMod)
 				success = false
-			} else if lastMod.Go.Version != newMod.Go.Version {
+			} else if strings.TrimSuffix(lastMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
 				out.Error("upgrade changes required Go version, reverting go.mod")
 				save(lastMod)
 				success = false
