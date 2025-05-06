@@ -15,6 +15,7 @@ func TestOutputMarkdown(t *testing.T) {
 	out.Header("Test Header")
 	out.BeginPreformatted("Test Preformatted")
 	out.Println("Text")
+	out.Error("Error")
 	out.EndPreformatted()
 	out.BeginPreformatted("Test Preformatted")
 	out.Println("Text")
@@ -26,8 +27,10 @@ func TestOutputMarkdown(t *testing.T) {
 ### Test Header
 
 <details><summary>Test Preformatted</summary>
+
 ` + "```" + `
 Text
+Error
 ` + "```" + `
 </details>
 Test End

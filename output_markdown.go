@@ -56,7 +56,7 @@ func (out *OutputMarkdown) BeginPreformatted(text ...any) {
 		return
 	}
 
-	fmt.Fprintf(out.w, "\n<details><summary>%s</summary>\n```\n", joinAny(text...))
+	fmt.Fprintf(out.w, "\n<details><summary>%s</summary>\n\n```\n", joinAny(text...))
 }
 
 func (out *OutputMarkdown) EndPreformatted(text ...any) {
@@ -103,7 +103,7 @@ func (out *OutputMarkdown) Println(text ...string) {
 }
 
 func (out *OutputMarkdown) Error(str ...string) {
-	fmt.Fprintln(out.w, color(strings.Join(str, " "), ColorRed))
+	fmt.Fprintln(out.w, strings.Join(str, " "))
 }
 
 func (out *OutputMarkdown) Fatal(msg string, code ...int) {
