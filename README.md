@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run gobump-deps action
-        uses: lzap/gobump@main
+        uses: lzap/gobump@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go test ./..."
@@ -72,11 +72,11 @@ jobs:
 
 ## How it works
 
-* Loads project `go.mod` and stores it in memory
-* For each direct dependency, it performs `go get -u DEPENDENCY@latest`
-* If the command fails, it reverts to the last version of `go.mod`
-* If the command upgraded Go version in `go.mod`, it reverts to the last version of `go.mod`
-* If the command succeeds, it parses the newly created `go.mod` and continues working on other dependencies
+* Loads project `go.mod` and stores it in memory.
+* For each direct dependency, it performs `go get -u DEPENDENCY@latest`.
+* If the `go get` command fails or modifies Go version in `go.mod`, it reverts to the last version of `go.mod`.
+* If user provides one or more optional `exec` argument, it executes it and if any of the commands fails, it reverts to the last `go.mod` version too.
+* Repeats for every other direct dependency.
 
 ## Executing build or tests
 
@@ -85,6 +85,8 @@ For every single updated dependency, it is possible to run one or more commands 
 ```
 gobump -exec "go build ./..." -exec "go test ./..."
 ```
+
+Commands are not executed via shell.
 
 ## Ambiguous imports
 
