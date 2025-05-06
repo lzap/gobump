@@ -34,6 +34,7 @@ Error
 ` + "```" + `
 </details>
 Test End
+
 :pretzel: *Created with [gobump](https://github.com/lzap/gobump) (HEAD)* :pretzel:
 `
 

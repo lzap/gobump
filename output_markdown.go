@@ -32,7 +32,7 @@ func (out *OutputMarkdown) Begin(text ...any) {
 }
 
 func (out *OutputMarkdown) End(text ...any) {
-	defer fmt.Fprintf(out.w, ":pretzel: *Created with [gobump](https://github.com/lzap/gobump) (%s)* :pretzel:\n", BuildID())
+	defer fmt.Fprintf(out.w, "\n:pretzel: *Created with [gobump](https://github.com/lzap/gobump) (%s)* :pretzel:\n", BuildID())
 
 	if len(text) == 0 {
 		return
