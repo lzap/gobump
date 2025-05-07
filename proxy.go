@@ -28,6 +28,11 @@ func NewGoProxy(baseURL string) *GoProxy {
 func (p *GoProxy) FetchVersions(modName string) ([]module.Version, error) {
 	versions := []module.Version{}
 
+	modName, err := module.EscapePath(modName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to escape module path: %w", err)
+	}
+
 	resp, err := http.Get(fmt.Sprintf("%s/%s/@v/list", p.baseURL, modName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch versions: %w", err)
