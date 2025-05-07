@@ -118,8 +118,8 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 
 func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintf(out.w, "\n## Summary\n\n")
-	fmt.Fprintln(out.w, "|Module|Action|Min Go|Before|After|")
-	fmt.Fprintln(out.w, "|---|---|---|---|---|")
+	fmt.Fprintln(out.w, "|Module|Action|Before|After|")
+	fmt.Fprintln(out.w, "|---|---|---|---|")
 
 	for _, r := range results {
 		action := "skipped"
@@ -133,7 +133,6 @@ func (out *OutputMarkdown) PrintSummary(results []Result) {
 		out.Println(strings.Join([]string{
 			r.ModulePath,
 			action,
-			strOrDash(r.MinGoVersion),
 			strOrDash(r.VersionBefore),
 			strOrDash(r.VersionAfter),
 		}, "|"))

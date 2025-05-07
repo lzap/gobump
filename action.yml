@@ -4,6 +4,10 @@ branding:
   icon: "box"
   color: "orange"
 inputs:
+  go_version:
+    description: "Go version to use when setup_go is true (defaults: stable)"
+    required: false
+    default: "stable"
   token:
     description: "GitHub token with permissions to push branches and open PRs"
     required: true
@@ -31,6 +35,10 @@ inputs:
     description: "Create a pull request with the changes"
     required: false
     default: "true"
+  development:
+    description: "Run in development mode and build from the current repo (default: false)"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -38,20 +46,44 @@ runs:
     - name: Set up Go environment
       if: ${{ inputs.setup_go == 'true' }}
       uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go_version }}
+        cache: 'true'
+        cache-dependency-path: '**/go.sum'
 
-    - name: Install gobump
+    - name: Bump dependencies with latest version
+      if: ${{ inputs.development == 'false' }}
       shell: bash
+      env:
+        GOTOOLCHAIN: local
       run: |
-        go install github.com/lzap/gobump@latest
+        go version
+        go env
+        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" | tee /tmp/bump.log
 
-    - name: Bump dependencies
+    - name: Prepare development environment
+      if: ${{ inputs.development == 'true' }}
       shell: bash
+      env:
+        GOTOOLCHAIN: local
       run: |
-        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" > bump.log
+        go version
+        go env
+        go get -v ./...
+
+    - name: Bump dependencies with development version
+      if: ${{ inputs.development == 'true' }}
+      shell: bash
+      env:
+        GOTOOLCHAIN: local
+      run: |
+        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}
       shell: bash
+      env:
+        GOTOOLCHAIN: local
       run: |
         go mod tidy
 
@@ -68,5 +100,5 @@ runs:
         branch: "gobump-deps-${{ github.run_id }}"
         commit-message: "chore: bump Go dependencies"
         title: "chore: bump dependencies via gobump"
-        body-path: bump.log
+        body-path: /tmp/bump.log
         labels: ${{ inputs.labels }}

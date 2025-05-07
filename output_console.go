@@ -92,9 +92,9 @@ func (out *OutputConsole) PrintSummary(results []Result) {
 			}
 		}
 		if r.VersionAfter != "" && r.VersionAfter != r.VersionBefore && action != "skipped" {
-			out.Println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion), r.VersionBefore, "->", r.VersionAfter)
+			out.Println(r.ModulePath, action, r.VersionBefore, "->", r.VersionAfter)
 		} else {
-			out.Println(r.ModulePath, action, fmt.Sprintf("mingo:%s", r.MinGoVersion))
+			out.Println(r.ModulePath, action)
 
 		}
 	}

@@ -27,6 +27,7 @@ var (
 	format   string
 	gomodsrc string
 	gomoddst string
+	retries  int
 
 	out Output
 )
@@ -51,6 +52,7 @@ func main() {
 	flag.StringVar(&format, "format", defaultFormat, "output format (console, markdown, none)")
 	flag.StringVar(&gomodsrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
 	flag.StringVar(&gomoddst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
+	flag.IntVar(&retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
 	flag.Parse()
 
 	if format == "markdown" {
@@ -74,22 +76,40 @@ func main() {
 		}
 	}()
 
+	proxy := NewGoProxy("")
+
+	var newMod *modfile.File
 	for _, r := range original.Require {
 		if !r.Indirect {
-			out.Header(r.Mod.Path)
-			out.BeginPreformatted(goBinary, "get", r.Mod.Path+"@latest")
 			success := true
 			lastMod := modules[len(modules)-1]
-			err := cmd(goBinary, "get", r.Mod.Path+"@latest")
-			newMod := parse(gomodsrc)
+			out.Header(r.Mod.Path)
+			out.BeginPreformatted(goBinary, "get", r.Mod.Path)
+			versions, err := proxy.FetchVersions(r.Mod.Path)
 			if err != nil {
-				out.Error("upgrade unsuccessful, reverting go.mod")
-				save(gomoddst, lastMod)
-				success = false
-			} else if strings.TrimSuffix(lastMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
-				out.Error("upgrade changes required Go version, reverting go.mod")
-				save(gomoddst, lastMod)
-				success = false
+				out.Error("failed to fetch versions:", err.Error())
+				out.EndPreformatted(false)
+				continue
+			}
+			for vi, version := range versions {
+				if vi >= retries {
+					out.Error("too many failed attempts, giving up")
+					break
+				}
+				err := cmd(goBinary, "get", r.Mod.Path+"@"+version.Version)
+				newMod = parse(gomodsrc)
+				if err != nil {
+					out.Error("upgrade unsuccessful, reverting go.mod")
+					save(gomoddst, lastMod)
+					success = false
+				} else if strings.TrimSuffix(lastMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
+					out.Error("upgrade changes required Go version, reverting go.mod")
+					save(gomoddst, lastMod)
+					success = false
+				} else {
+					success = true
+					break
+				}
 			}
 			out.EndPreformattedCond(!success)
 
@@ -116,7 +136,6 @@ func main() {
 
 			result := Result{
 				ModulePath:    r.Mod.Path,
-				MinGoVersion:  newMod.Go.Version,
 				VersionBefore: r.Mod.Version,
 				VersionAfter:  newRequire.Mod.Version,
 			}
