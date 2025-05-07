@@ -2,14 +2,45 @@
 
 Pins Go version when bumping dependencies.
 
-A simple tool which upgrades all direct dependencies one by one ensuring the Go version statement in `go.mod` is never touched. This is useful if your build infrastructure lags behind the latest and greatest Go version and you are unable to upgrade yet, for example when using Red Hat Go Toolset for UBI.
+A simple tool which upgrades all direct dependencies one by one ensuring the Go version statement in `go.mod` is never touched. This is useful if your build infrastructure lags behind the latest and greatest Go version and you are unable to upgrade yet, for example when using Go from Linux distribution packages or when using a container runtime like Red Hat Go Toolset for UBI.
 
-It solves the following problem of `go get -u` pushing for the latest Go version, even if you explicitly use a specific version of Go:
+## The problem
+
+When `go get -u ./...` is issued, at some point `go X.YY` in `go.mod` will be upgraded with the following message:
 
 ```
-$ go1.21.0 get -u golang.org/x/tools@latest
+$ go get -u ./...
 go: upgraded go 1.21.0 => 1.22.0
 ```
+
+Using explicit version of Go binary does not change a thing:
+
+```
+$ go1.21.0 get -u ./...
+go: upgraded go 1.21.0 => 1.22.0
+```
+
+Starting from Go 1.21, Toolchain feature was added which tries to solve some of the problems with tool versioning and also skips upgrade when toolchain version is explicitly set, but it has a different problem. When a single dependency cannot be upgraded it skips the whole upgrade transaction leading to no upgrades.
+
+In the following scenario, package `github.com/google/go-cmp` could be upgraded as it was working on Go 1.21 at the time, however, nothing was upgraded:
+
+```
+$ GOTOOLCHAIN=go1.21.0 go get -u ./...
+go: golang.org/x/mod@v0.24.0 requires go >= 1.23.0 (running go 1.21.0; GOTOOLCHAIN=go1.21.0)
+go: golang.org/x/sys@v0.33.0 requires go >= 1.23.0 (running go 1.21.0; GOTOOLCHAIN=go1.21.0)
+go: golang.org/x/term@v0.32.0 requires go >= 1.23.0 (running go 1.21.0; GOTOOLCHAIN=go1.21.0)
+```
+
+Only when dependencies are upgraded one by one, it works:
+
+```
+$ GOTOOLCHAIN=go1.21.0 go get -u github.com/google/go-cmp
+go: upgraded github.com/google/go-cmp v0.3.0 => v0.7.0
+```
+
+This is what this utility does, it upgrades dependencies one by one optionally running `go build` or `go test` when configured to ensure the project builds. This is useful for mass-upgrade of dependencies to isolate those which break tests.
+
+When a dependency cannot be upgraded (or optional command(s) fail to execute e.g. `go test`), it retries several times (configurable) with older versions of the module until it succeeds. By default it goes back up to 5 versions.
 
 ## Installation
 
@@ -20,31 +51,44 @@ go install github.com/lzap/gobump@latest
 ## Usage
 
 ```
-cd ~/your_project
+  -dry-run
+        revert to original go.mod after running
+  -dst-go-mod string
+        path to go.mod destination file (default: go.mod) (default "go.mod")
+  -exec value
+        exec command for each individual bump, can be used multiple times
+  -format string
+        output format (console, markdown, none) (default "console")
+  -retries int
+        number of downgrade retries for each module (default: 5) (default 5)
+  -src-go-mod string
+        path to go.mod source file (default: go.mod) (default "go.mod")
+  -verbose
+        print more information including stderr of executed commands
 ```
 
-The utility currently does not take any arguments:
+The utility currently does not take any arguments, but it is important to always specify GOTOOLCHAIN variable. It must match the version in `go.mod` of the project and it is the version you want to pin and never update.
 
 ```
-gobump
+GOTOOLCHAIN=go1.22.0 gobump
 ```
 
 Example output:
 
 ```
-go get golang.org/x/sys@latest
-go get golang.org/x/tools@latest
-go: upgraded go 1.21.0 => 1.22.0
-go: upgraded toolchain go1.22.5 => go1.22.7
-go: upgraded golang.org/x/mod v0.20.0 => v0.21.0
-go: upgraded golang.org/x/tools v0.24.0 => v0.26.0
-upgrade changes required Go version, reverting go.mod
-go get google.golang.org/api@latest
-go get cloud.google.com/go/compute@latest
-go get cloud.google.com/go/storage@latest
-```
+go get github.com/google/go-cmp@latest
+go get golang.org/x/mod@latest
+go: golang.org/x/mod@latest: golang.org/x/mod@v0.24.0 requires go >= 1.23.0 (running go 1.22.0; GOTOOLCHAIN=go1.22.0)
+upgrade unsuccessful, reverting go.mod
+go get golang.org/x/term@latest
+go: golang.org/x/term@latest: golang.org/x/term@v0.32.0 requires go >= 1.23.0 (running go 1.22.0; GOTOOLCHAIN=go1.22.0)
+upgrade unsuccessful, reverting go.mod
 
-The above command upgraded all dependencies except `golang.org/x/tools` which would have increased Go requirement.
+Summary:
+github.com/google/go-cmp no action mingo:1.22.0
+golang.org/x/mod skipped mingo:1.22.0
+golang.org/x/term skipped mingo:1.22.0
+```
 
 ## GitHub Action
 
@@ -69,8 +113,9 @@ jobs:
       - name: Run gobump-deps action
         uses: lzap/gobump@v1
         with:
+          go_version: "1.22.0"
           #setup_go: true
-          #exec: "go test ./..."
+          #exec: "go test -buildvcs=false ./..."
           #tidy: true
           #pr: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -79,24 +124,29 @@ jobs:
 
 Action input:
 
+* `go_version`: **the version to use** and thus pin the project to (defaults to stable but always set this one)
+* `setup_go`: set to `false` to avoid `setup-go` action (e.g. when container with specific Go is used)
 * `exec`: optional command to execute for each dependency update
 * `exec2`: second optional command to execute for each dependency update
 * `tidy`: set to `false` to avoid executing `go mod tidy` after `gobump`
-* `setup_go`: set to `false` to avoid `setup-go` action (e.g. when container with Go is used)
 * `exec_pr`: optional command to execute before PR is made
 * `pr`: set to `false` to avoid creation of a PR
 * `token`: github token
 * `labels`: comma-separated github PR labels
 
+Tip: When building or testing in a container, use `-buildvcs=false` to avoid `git: detected dubious ownership in repository` permissions errors. Alternatively, set `git config --system --add safe.directory /path` config option.
+
 ## How it works
 
 * Loads project `go.mod` and stores it in memory.
-* For each direct dependency, it performs `go get -u DEPENDENCY@latest`.
-* If the `go get` command fails or modifies Go version in `go.mod`, it reverts to the last version of `go.mod`.
-* If user provides one or more optional `exec` argument, it executes it and if any of the commands fails, it reverts to the last `go.mod` version too.
+* For each direct dependency, it performs `go get -u DEPENDENCY@V` where `V` is one of the 5 latest versions reported by [proxy.golang.org](https://proxy.golang.org/github.com/lzap/gobump/@v/list).
+* If the `go get` command fails (e.g. `GOTOOLCHAIN` is set) or modifies Go version in `go.mod`, it reverts to the last version of `go.mod` and tries again with lower version up to N tries (configurable, by default it is 5).
+* If and only if a module succeeds to update and one or more optional `exec` arguments are passed, it executes them and if any of the commands fails, it reverts to the last `go.mod` version.
 * Repeats for every other direct dependency.
 
-## Executing build or tests
+It is recommended to set `GOTOOLCHAIN` to explicit Go version to speed up failure of `go get` because with specific Go version it immediately fails and does not even attempt to download and install packages leading to `go.mod` change.
+
+## Custom commands
 
 For every single updated dependency, it is possible to run one or more commands to ensure the project builds or tests are passing. Use `-exec` option multiple times to do that, when such command returns non-zero value it is considered as a failure and that update is rolled back.
 
@@ -104,7 +154,7 @@ For every single updated dependency, it is possible to run one or more commands 
 gobump -exec "go build ./..." -exec "go test ./..."
 ```
 
-Commands are not executed via shell.
+Commands are not executed via shell. Subprocesses will inherit the `GOTOOLCHAIN` setting so it is fine to use just `go` command or any version of Go later than 1.21 and it will pickup the correct toolchain.
 
 ## Ambiguous imports
 
@@ -126,7 +176,11 @@ go get google.golang.org/grpc/stats/opentelemetry@none
 
 ## Configuration
 
-It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` environment variable to use a different Go version that is available through `PATH`.
+It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` environment variable to use a different Go version that is available through `PATH`. But the recommended way of using specific Go tooling is via `GOTOOLCHAIN` variable.
+
+## Limitations
+
+When module `latest` version cannot be upgraded, the tool currently does not attempt to lower its version and find the latest that works. This is a feature that will be implemented later.
 
 ## Discussion
 

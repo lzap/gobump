@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -20,6 +21,7 @@ func cmd(cmd string, args ...string) error {
 		out.Println(cmd, strings.Join(args, " "))
 	}
 	c := exec.Command(cmd, args...)
+	c.Env = os.Environ()
 	if verbose {
 		c.Stdout = out
 		c.Stderr = out

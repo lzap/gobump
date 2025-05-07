@@ -18,19 +18,20 @@ jobs:
       - name: Run gobump-deps action
         uses: ./
         with:
+          go_version: "1.22.0" # keep in sync with go.mod
           token: ${{ secrets.GITHUB_TOKEN }}
-          exec: "go build ."
-          exec2: "go test ."
-          labels: "ubuntu"
-          exec_pr: "echo 'Running before PR command'"
+          exec: "go build -buildvcs=false ."
+          exec2: "go test -buildvcs=false ."
+          exec_pr: "ls -lah1"
           pr: false
+          development: true
 
   bump-deps-fedora:
     runs-on: ubuntu-latest
     container: registry.fedoraproject.org/fedora:42
     steps:
       - name: Set up the environment
-        run: "sudo dnf -y install git gh golang"
+        run: "sudo dnf -y install git gh"
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,11 +39,10 @@ jobs:
       - name: Run gobump-deps action
         uses: ./
         with:
+          go_version: "1.22.0" # keep in sync with go.mod
           token: ${{ secrets.GITHUB_TOKEN }}
-          exec: "go build ."
-          exec2: "go test ."
-          labels: "fedora"
-          exec_pr: "echo 'Running before PR command'"
+          exec: "go build -buildvcs=false ."
+          exec2: "go test -buildvcs=false ."
+          exec_pr: "ls -lah1"
           pr: false
-          setup_go: false
-  
+          development: true
