@@ -83,12 +83,12 @@ func (out *OutputConsole) PrintSummary(results []Result) {
 	out.Println(color("summary:", ColorBold))
 
 	for _, r := range results {
-		action := "skipped"
+		action := "err"
 		if r.Success {
 			if r.VersionAfter == r.VersionBefore {
-				action = "no action"
+				action = "keep"
 			} else {
-				action = "upgraded"
+				action = "update"
 			}
 		}
 		if r.VersionAfter != "" && r.VersionAfter != r.VersionBefore && action != "skipped" {

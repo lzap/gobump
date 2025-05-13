@@ -122,12 +122,12 @@ func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintln(out.w, "|---|---|---|---|")
 
 	for _, r := range results {
-		action := "skipped"
+		action := "err"
 		if r.Success {
 			if r.VersionAfter == r.VersionBefore {
-				action = "no action"
+				action = "keep"
 			} else {
-				action = "upgraded"
+				action = "update"
 			}
 		}
 		out.Println(strings.Join([]string{

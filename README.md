@@ -85,10 +85,16 @@ go: golang.org/x/term@latest: golang.org/x/term@v0.32.0 requires go >= 1.23.0 (r
 upgrade unsuccessful, reverting go.mod
 
 Summary:
-github.com/google/go-cmp no action mingo:1.22.0
-golang.org/x/mod skipped mingo:1.22.0
-golang.org/x/term skipped mingo:1.22.0
+github.com/google/go-cmp keep
+golang.org/x/mod err
+golang.org/x/term err
 ```
+
+Summary legend:
+
+* `keep`: version is kept (no update available)
+* `update`: module updated to newer version
+* `err`: there was an error during update, either required Go version is too high or one of the `exec` commands failed or other error
 
 ## GitHub Action
 
