@@ -8,6 +8,10 @@ inputs:
     description: "Go version to use when setup_go is true (defaults: stable)"
     required: false
     default: "stable"
+  cgo_enabled:
+    description: "Enable CGO environment variable"
+    required: false
+    default: "0"
   token:
     description: "GitHub token with permissions to push branches and open PRs"
     required: true
@@ -56,6 +60,7 @@ runs:
       shell: bash
       env:
         GOTOOLCHAIN: local
+        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
         go version
         go env
@@ -66,6 +71,7 @@ runs:
       shell: bash
       env:
         GOTOOLCHAIN: local
+        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
         go version
         go env
@@ -76,6 +82,7 @@ runs:
       shell: bash
       env:
         GOTOOLCHAIN: local
+        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
         go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" | tee /tmp/bump.log
 
@@ -84,10 +91,14 @@ runs:
       shell: bash
       env:
         GOTOOLCHAIN: local
+        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
         go mod tidy
 
     - name: Execute command before PR
+      env:
+        GOTOOLCHAIN: local
+        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       shell: bash
       if: ${{ inputs.exec_pr != '' }}
       run: ${{ inputs.exec_pr }}
