@@ -20,6 +20,7 @@ func TestFetchVersions(t *testing.T) {
 		fmt.Fprintln(w, "v2.0.0-alpha1")
 		fmt.Fprintln(w, "v1.0.0")
 		fmt.Fprintln(w, "v1.1.0")
+		fmt.Fprintln(w, "v0.51.0-alpha.0")
 		fmt.Fprintln(w, "v0.0.0-20170915032832-14c0d48ead0c")
 	}))
 	defer server.Close()
