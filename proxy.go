@@ -46,6 +46,10 @@ func (p *GoProxy) FetchVersions(modName string) ([]module.Version, error) {
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if !strings.HasPrefix(line, "v0") && strings.Contains(line, "-") {
+			// skip pre-release versions
+			continue
+		}
 		v := module.Version{
 			Path:    modName,
 			Version: strings.TrimSpace(line),

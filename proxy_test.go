@@ -16,8 +16,11 @@ func TestFetchVersions(t *testing.T) {
 			t.Fatalf("expected request to /example.com/!module/@v/list, got %s", r.URL.Path)
 		}
 		fmt.Fprintln(w, "v2.0.0")
+		fmt.Fprintln(w, "v2.0.0-alpha2")
+		fmt.Fprintln(w, "v2.0.0-alpha1")
 		fmt.Fprintln(w, "v1.0.0")
 		fmt.Fprintln(w, "v1.1.0")
+		fmt.Fprintln(w, "v0.0.0-20170915032832-14c0d48ead0c")
 	}))
 	defer server.Close()
 
@@ -31,6 +34,7 @@ func TestFetchVersions(t *testing.T) {
 		{Path: "example.com/!module", Version: "v2.0.0"},
 		{Path: "example.com/!module", Version: "v1.1.0"},
 		{Path: "example.com/!module", Version: "v1.0.0"},
+		{Path: "example.com/!module", Version: "v0.0.0-20170915032832-14c0d48ead0c"},
 	}
 
 	if diff := cmp.Diff(expected, versions); diff != "" {
