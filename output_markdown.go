@@ -118,23 +118,22 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 
 func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintf(out.w, "\n## Summary\n\n")
-	fmt.Fprintln(out.w, "|Module|Action|Before|After|")
-	fmt.Fprintln(out.w, "|---|---|---|---|")
+	fmt.Fprintln(out.w, "|Module|A|Version|")
+	fmt.Fprintln(out.w, "|---|---|---|")
 
 	for _, r := range results {
-		action := "err"
+		action := "E"
 		if r.Success {
 			if r.VersionAfter == r.VersionBefore {
-				action = "keep"
+				action = "-"
 			} else {
-				action = "update"
+				action = "U"
 			}
 		}
 		out.Println(strings.Join([]string{
 			r.ModulePath,
 			action,
-			strOrDash(r.VersionBefore),
-			strOrDash(r.VersionAfter),
+			strOrDash(r.VersionBefore) + " > " + strOrDash(r.VersionAfter),
 		}, "|"))
 	}
 }
