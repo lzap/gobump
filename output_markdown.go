@@ -118,7 +118,7 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 
 func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintf(out.w, "\n## Summary\n\n")
-	fmt.Fprintln(out.w, "|Module|A|Version|")
+	fmt.Fprintln(out.w, "|Module|[A](## \"U-update,E=error,dash-no action\")|Version|")
 	fmt.Fprintln(out.w, "|---|---|---|")
 
 	for _, r := range results {
