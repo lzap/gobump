@@ -18,7 +18,6 @@ jobs:
       - name: Run gobump-deps action
         uses: ./
         with:
-          go_version: "1.22.0" # keep in sync with go.mod
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go build -buildvcs=false ."
           exec2: "go test -buildvcs=false ."
@@ -39,7 +38,6 @@ jobs:
       - name: Run gobump-deps action
         uses: ./
         with:
-          go_version: "1.22.0" # keep in sync with go.mod
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go build -buildvcs=false ."
           exec2: "go test -buildvcs=false ."
