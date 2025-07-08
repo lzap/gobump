@@ -83,7 +83,6 @@ func main() {
 		if !r.Indirect {
 			success := true
 			lastMod := modules[len(modules)-1]
-			out.Header(r.Mod.Path)
 			out.BeginPreformatted(goBinary, "get", r.Mod.Path)
 			versions, err := proxy.FetchVersions(r.Mod.Path)
 			if err != nil {
@@ -150,6 +149,10 @@ func main() {
 			results = append(results, result)
 		}
 	}
+
+	slices.SortFunc(results, func(a, b Result) int {
+		return strings.Compare(a.ModulePath, b.ModulePath)
+	})
 
 	out.PrintSummary(results)
 }
