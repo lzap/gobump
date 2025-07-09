@@ -117,15 +117,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run gobump-deps action
-        uses: lzap/gobump@v1
+        uses: lzap/gobump@main
         with:
           go_version: "1.22.0"
-          #setup_go: true
-          #exec: "go test -buildvcs=false ./..."
-          #tidy: true
-          #pr: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          #labels: "gobump"
 ```
 
 Action input:
@@ -184,7 +179,7 @@ go get google.golang.org/grpc/stats/opentelemetry@none
 
 It is possible to use different binary than `go`, set `GOVERSION=go1.21.0` environment variable to use a different Go version that is available through `PATH`. But the recommended way of using specific Go tooling is via `GOTOOLCHAIN` variable.
 
-## Limitations
+## Limitations
 
 When module `latest` version cannot be upgraded, the tool currently does not attempt to lower its version and find the latest that works. This is a feature that will be implemented later.
 
