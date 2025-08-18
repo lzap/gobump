@@ -55,11 +55,12 @@ func main() {
 	flag.IntVar(&retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
 	flag.Parse()
 
-	if format == "markdown" {
+	switch format {
+	case "markdown":
 		out = NewOutputMarkdown(os.Stdout)
-	} else if format == "console" {
+	case "console":
 		out = &OutputConsole{}
-	} else {
+	default:
 		out = &OutputNone{}
 	}
 
