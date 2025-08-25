@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"golang.org/x/mod/module"
+	"golang.org/x/mod/semver"
 )
 
 type GoProxy struct {
@@ -23,9 +24,14 @@ func NewGoProxy(baseURL string) *GoProxy {
 	return &GoProxy{baseURL: baseURL}
 }
 
+func isPreRelease(version string) bool {
+	return strings.Contains(version, "-")
+}
+
 // FetchVersions fetches the list of versions for a given module from the Go proxy.
 // It returns a slice of module.Version structs sorted in descending order.
-func (p *GoProxy) FetchVersions(modName string) ([]module.Version, error) {
+// Pre-release versions will return pre-release versions
+func (p *GoProxy) FetchVersions(modName string, version string) ([]module.Version, error) {
 	versions := []module.Version{}
 
 	modName, err := module.EscapePath(modName)
@@ -46,14 +52,22 @@ func (p *GoProxy) FetchVersions(modName string) ([]module.Version, error) {
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Count(line, "-") == 1 {
-			// skip pre-release versions
+
+		// skip pre-release versions
+		if !isPreRelease(version) && isPreRelease(line) {
 			continue
 		}
+
+		// skip lower versions
+		if semver.Compare(version, line) >= 0 {
+			continue
+		}
+
 		v := module.Version{
 			Path:    modName,
 			Version: strings.TrimSpace(line),
 		}
+
 		versions = append(versions, v)
 	}
 
