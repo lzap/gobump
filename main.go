@@ -55,11 +55,12 @@ func main() {
 	flag.IntVar(&retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
 	flag.Parse()
 
-	if format == "markdown" {
+	switch format {
+	case "markdown":
 		out = NewOutputMarkdown(os.Stdout)
-	} else if format == "console" {
+	case "console":
 		out = &OutputConsole{}
-	} else {
+	default:
 		out = &OutputNone{}
 	}
 
@@ -78,16 +79,17 @@ func main() {
 
 	proxy := NewGoProxy("")
 
-	var newMod *modfile.File
+	newMod := parse(gomodsrc)
 	for _, r := range original.Require {
 		if !r.Indirect {
 			success := true
 			lastMod := modules[len(modules)-1]
+
 			out.BeginPreformatted(goBinary, "get", r.Mod.Path)
-			versions, err := proxy.FetchVersions(r.Mod.Path)
+			versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 			if err != nil {
 				out.Error("failed to fetch versions:", err.Error())
-				out.EndPreformatted(false)
+				out.EndPreformattedCond(false)
 				continue
 			}
 			for vi, version := range versions {
