@@ -17,6 +17,9 @@ func parse(file string) *modfile.File {
 		out.Fatal("error parsing go.mod", ERR_PARSE)
 	}
 
+	if verbose {
+		out.Println("parsed go.mod:", mod.Go.Version)
+	}
 	return mod
 }
 

@@ -68,7 +68,6 @@ func main() {
 	defer out.End()
 
 	original := parse(gomodsrc)
-	modules := []*modfile.File{original}
 	var results []Result
 
 	defer func() {
@@ -79,17 +78,21 @@ func main() {
 
 	proxy := NewGoProxy("")
 
-	newMod := parse(gomodsrc)
+	okMod := parse(gomodsrc)
+	var newMod *modfile.File
+
 	for _, r := range original.Require {
 		if !r.Indirect {
 			success := true
-			lastMod := modules[len(modules)-1]
 
 			out.BeginPreformatted(goBinary, "get", r.Mod.Path)
 			versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 			if err != nil {
 				out.Error("failed to fetch versions:", err.Error())
 				out.EndPreformattedCond(false)
+				continue
+			}
+			if len(versions) == 0 {
 				continue
 			}
 			for vi, version := range versions {
@@ -101,13 +104,18 @@ func main() {
 				newMod = parse(gomodsrc)
 				if err != nil {
 					out.Error("upgrade unsuccessful, reverting go.mod")
-					save(gomoddst, lastMod)
+					save(gomoddst, okMod)
 					success = false
-				} else if strings.TrimSuffix(lastMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
-					out.Error("upgrade changes required Go version, reverting go.mod")
-					save(gomoddst, lastMod)
+				} else if newMod == nil || newMod.Go == nil {
+					out.Error("parsing error, reverting go.mod")
+					save(gomoddst, okMod)
+					success = false
+				} else if strings.TrimSuffix(okMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
+					out.Error("upgrade changes required Go version", okMod.Go.Version, " => ", newMod.Go.Version, "reverting go.mod")
+					save(gomoddst, okMod)
 					success = false
 				} else {
+					out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
 					success = true
 					break
 				}
@@ -123,29 +131,31 @@ func main() {
 					out.BeginPreformatted(c)
 					if err := cmds(c); err != nil {
 						out.Error("tests failed, reverting go.mod")
-						save(gomoddst, lastMod)
+						save(gomoddst, okMod)
 						success = false
 					}
 					out.EndPreformattedCond(!success)
 				}
 			}
 
-			mi := slices.IndexFunc(newMod.Require, func(re *modfile.Require) bool {
-				return re.Mod.Path == r.Mod.Path
-			})
-			newRequire := newMod.Require[mi]
-
 			result := Result{
 				ModulePath:    r.Mod.Path,
 				VersionBefore: r.Mod.Version,
-				VersionAfter:  newRequire.Mod.Version,
 			}
 
 			if success {
-				modules = append(modules, newMod)
+				okMod = newMod
 				result.Success = true
 			} else {
 				result.Success = false
+			}
+
+			if newMod != nil {
+				mi := slices.IndexFunc(newMod.Require, func(re *modfile.Require) bool {
+					return re.Mod.Path == r.Mod.Path
+				})
+				newRequire := newMod.Require[mi]
+				result.VersionAfter = newRequire.Mod.Version
 			}
 
 			results = append(results, result)
@@ -155,6 +165,8 @@ func main() {
 	slices.SortFunc(results, func(a, b Result) int {
 		return strings.Compare(a.ModulePath, b.ModulePath)
 	})
+
+	parse(gomodsrc)
 
 	out.PrintSummary(results)
 }
