@@ -31,8 +31,12 @@ type AppConfig struct {
 
 var config *AppConfig
 
-// ParseArgs parses command-line arguments and returns an AppConfig
-func ParseArgs() {
+func isCI() bool {
+	return os.Getenv("GITHUB_ACTIONS")+os.Getenv("GITLAB_CI")+os.Getenv("CIRCLECI") != ""
+}
+
+// InitConfig initializes the global configuration object.
+func InitConfig() {
 	config = &AppConfig{}
 
 	goBinary := os.Getenv("GOVERSION")
@@ -43,7 +47,7 @@ func ParseArgs() {
 
 	defaultFormat := "console"
 	defaultVerbose := false
-	if os.Getenv("GITHUB_ACTIONS")+os.Getenv("GITLAB_CI")+os.Getenv("CIRCLECI") != "" {
+	if isCI() {
 		defaultFormat = "markdown"
 		defaultVerbose = true
 	}

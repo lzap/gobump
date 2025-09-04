@@ -1,20 +1,37 @@
 package main
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
 	"golang.org/x/mod/modfile"
 )
 
-// upgradeModule attempts to upgrade a single module.
-// It returns the new modfile.File and a boolean indicating success.
-func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool) {
-	var success bool
-	var newMod *modfile.File
+// attemptUpgrade tries to upgrade a module to a specific version.
+func attemptUpgrade(modulePath, version string) (*modfile.File, error) {
+	err := cmd(config.GoBinary, "get", modulePath+"@"+version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get module: %w", err)
+	}
+	return parseMod(config.GoModSrc)
+}
 
+// validateUpgrade checks if the upgrade is valid.
+func validateUpgrade(originalMod, newMod *modfile.File) error {
+	if newMod == nil || newMod.Go == nil {
+		return fmt.Errorf("parsing error")
+	}
+	if strings.TrimSuffix(originalMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
+		return fmt.Errorf("upgrade changes required Go version %s => %s", originalMod.Go.Version, newMod.Go.Version)
+	}
+	return nil
+}
+
+// upgradeModule attempts to upgrade a single module.
+func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool) {
 	out.BeginPreformatted(config.GoBinary, "get", r.Mod.Path)
-	defer func() { out.EndPreformattedCond(!success) }()
+	defer out.EndPreformattedCond(false) // Assume failure until success
 
 	versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 	if err != nil {
@@ -22,7 +39,7 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 		return okMod, false
 	}
 	if len(versions) == 0 {
-		return okMod, true // No new versions, consider it a success
+		return okMod, true // No new versions
 	}
 
 	for vi, version := range versions {
@@ -30,45 +47,47 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 			out.Error("too many failed attempts, giving up")
 			break
 		}
-		err := cmd(config.GoBinary, "get", r.Mod.Path+"@"+version.Version)
-		newMod = parseMod(config.GoModSrc)
+
+		newMod, err := attemptUpgrade(r.Mod.Path, version.Version)
 		if err != nil {
 			out.Error("upgrade unsuccessful, reverting go.mod")
-			saveMod(config.GoModDst, okMod)
-		} else if newMod == nil || newMod.Go == nil {
-			out.Error("parsing error, reverting go.mod")
-			saveMod(config.GoModDst, okMod)
-		} else if strings.TrimSuffix(okMod.Go.Version, ".0") != strings.TrimSuffix(newMod.Go.Version, ".0") {
-			out.Error("upgrade changes required Go version", okMod.Go.Version, " => ", newMod.Go.Version, "reverting go.mod")
-			saveMod(config.GoModDst, okMod)
-		} else {
-			out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
-			success = true
-			return newMod, true
+			if err := saveMod(config.GoModDst, okMod); err != nil {
+				out.Error("failed to revert go.mod:", err.Error())
+			}
+			continue
 		}
+
+		if err := validateUpgrade(okMod, newMod); err != nil {
+			out.Error(err.Error(), ", reverting go.mod")
+			if err := saveMod(config.GoModDst, okMod); err != nil {
+				out.Error("failed to revert go.mod:", err.Error())
+			}
+			continue
+		}
+
+		out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
+		out.EndPreformattedCond(true) // Mark as success
+		return newMod, true
 	}
 	return okMod, false
 }
 
 // runCommands executes post-upgrade commands.
-// Returns true if all commands succeed.
-func runCommands(okMod *modfile.File) bool {
+func runCommands(mod *modfile.File) bool {
 	for _, c := range config.Commands {
 		if c == "" {
 			continue
 		}
-
-		var success bool
 		out.BeginPreformatted(c)
 		if err := cmds(c); err != nil {
 			out.Error("tests failed, reverting go.mod")
-			saveMod(config.GoModDst, okMod)
-			success = false
-		}
-		out.EndPreformattedCond(!success)
-		if !success {
+			if err := saveMod(config.GoModDst, mod); err != nil {
+				out.Error("failed to revert go.mod:", err.Error())
+			}
+			out.EndPreformattedCond(false)
 			return false
 		}
+		out.EndPreformattedCond(true)
 	}
 	return true
 }
@@ -76,21 +95,24 @@ func runCommands(okMod *modfile.File) bool {
 func process(original *modfile.File) []Result {
 	var results []Result
 	proxy := NewGoProxy("")
-	okMod := parseMod(config.GoModSrc)
+	okMod, err := parseMod(config.GoModSrc)
+	if err != nil {
+		out.Fatal(err.Error(), ERR_PARSE)
+	}
 
 	for _, r := range original.Require {
 		if r.Indirect {
 			continue
 		}
 
-		var newMod *modfile.File
 		newMod, upgradeSuccess := upgradeModule(proxy, r, okMod)
 
 		if upgradeSuccess {
 			if !runCommands(newMod) {
 				upgradeSuccess = false
-				// Revert to the last known good mod file
-				saveMod(config.GoModDst, okMod)
+				if err := saveMod(config.GoModDst, okMod); err != nil {
+					out.Error("failed to revert go.mod:", err.Error())
+				}
 			}
 		}
 
@@ -115,7 +137,6 @@ func process(original *modfile.File) []Result {
 				result.VersionAfter = newRequire.Mod.Version
 			}
 		}
-
 		results = append(results, result)
 	}
 

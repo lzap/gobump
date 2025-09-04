@@ -1,36 +1,38 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"golang.org/x/mod/modfile"
 )
 
-func parseMod(file string) *modfile.File {
+func parseMod(file string) (*modfile.File, error) {
 	buf, err := os.ReadFile(file)
 	if err != nil {
-		out.Fatal("error reading go.mod", ERR_READ)
+		return nil, fmt.Errorf("error reading go.mod: %w", err)
 	}
 
 	mod, err := modfile.Parse(file, buf, nil)
 	if err != nil {
-		out.Fatal("error parsing go.mod", ERR_PARSE)
+		return nil, fmt.Errorf("error parsing go.mod: %w", err)
 	}
 
 	if config.Verbose {
 		out.Println("parsed go.mod:", mod.Go.Version)
 	}
-	return mod
+	return mod, nil
 }
 
-func saveMod(file string, mod *modfile.File) {
+func saveMod(file string, mod *modfile.File) error {
 	buf, err := mod.Format()
 	if err != nil {
-		out.Fatal("error formatting go.mod", ERR_PARSE)
+		return fmt.Errorf("error formatting go.mod: %w", err)
 	}
 
 	err = os.WriteFile(file, buf, 0644)
 	if err != nil {
-		out.Fatal("error writing go.mod", ERR_WRITE)
+		return fmt.Errorf("error writing go.mod: %w", err)
 	}
+	return nil
 }

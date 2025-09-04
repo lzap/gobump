@@ -9,7 +9,7 @@ var (
 )
 
 func main() {
-	ParseArgs()
+	InitConfig()
 
 	switch config.Format {
 	case "markdown":
@@ -23,17 +23,20 @@ func main() {
 	out.Begin()
 	defer out.End()
 
-	original := parseMod(config.GoModSrc)
+	original, err := parseMod(config.GoModSrc)
+	if err != nil {
+		out.Fatal(err.Error(), ERR_PARSE)
+	}
 
 	defer func() {
 		if config.DryRun {
-			saveMod(config.GoModDst, original)
+			if err := saveMod(config.GoModDst, original); err != nil {
+				out.Fatal(err.Error(), ERR_WRITE)
+			}
 		}
 	}()
 
 	results := process(original)
-
-	parseMod(config.GoModSrc)
 
 	out.PrintSummary(results)
 }
