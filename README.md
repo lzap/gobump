@@ -51,23 +51,29 @@ go install github.com/lzap/gobump@latest
 ## Usage
 
 ```
+  -changelog
+    	print git changelog of all updated modules (default true)
+  -changelog-gist string
+    	GitHub token to create a Gist with the changelog
   -dry-run
-        revert to original go.mod after running
+    	revert to original go.mod after running
   -dst-go-mod string
-        path to go.mod destination file (default: go.mod) (default "go.mod")
+    	path to go.mod destination file (default: go.mod) (default "go.mod")
   -exec value
-        exec command for each individual bump, can be used multiple times
+    	exec command for each individual bump, can be used multiple times
   -format string
-        output format (console, markdown, none) (default "console")
+    	output format (console, markdown, none) (default "console")
   -retries int
-        number of downgrade retries for each module (default: 5) (default 5)
+    	number of downgrade retries for each module (default: 5) (default 5)
   -src-go-mod string
-        path to go.mod source file (default: go.mod) (default "go.mod")
+    	path to go.mod source file (default: go.mod) (default "go.mod")
   -verbose
-        print more information including stderr of executed commands
+    	print more information including stderr of executed commands
 ```
 
-The utility currently does not take any arguments, but it is important to always specify GOTOOLCHAIN variable. It must match the version in `go.mod` of the project and it is the version you want to pin and never update.
+The utility can also take one or more positional arguments. When one or more arguments are provided, only those dependencies will be updated. This is useful for updating a specific set of dependencies.
+
+When no arguments are provided, it is important to always specify GOTOOLCHAIN variable. It must match the version in `go.mod` of the project and it is the version you want to pin and never update.
 
 ```
 GOTOOLCHAIN=go1.22.0 gobump
