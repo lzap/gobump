@@ -39,4 +39,7 @@ func main() {
 	results := process(original)
 
 	out.PrintSummary(results)
+	if config.Changelog {
+		PrintChangelogs(results)
+	}
 }
