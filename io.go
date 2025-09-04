@@ -17,12 +17,12 @@ const (
 )
 
 func cmd(cmd string, args ...string) error {
-	if verbose {
+	if config.Verbose {
 		out.Println(cmd, strings.Join(args, " "))
 	}
 	c := exec.Command(cmd, args...)
 	c.Env = os.Environ()
-	if verbose {
+	if config.Verbose {
 		c.Stdout = out
 		c.Stderr = out
 	} else {

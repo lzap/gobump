@@ -1,0 +1,62 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+)
+
+type stringSlice []string
+
+func (i *stringSlice) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *stringSlice) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+// AppConfig holds the application configuration
+type AppConfig struct {
+	DryRun   bool
+	Verbose  bool
+	Format   string
+	GoModSrc string
+	GoModDst string
+	Retries  int
+	Commands stringSlice
+	GoBinary string
+}
+
+var config *AppConfig
+
+// ParseArgs parses command-line arguments and returns an AppConfig
+func ParseArgs() {
+	config = &AppConfig{}
+
+	goBinary := os.Getenv("GOVERSION")
+	if goBinary == "" {
+		goBinary = "go"
+	}
+	config.GoBinary = goBinary
+
+	defaultFormat := "console"
+	defaultVerbose := false
+	if os.Getenv("GITHUB_ACTIONS")+os.Getenv("GITLAB_CI")+os.Getenv("CIRCLECI") != "" {
+		defaultFormat = "markdown"
+		defaultVerbose = true
+	}
+
+	var commands stringSlice
+	flag.BoolVar(&config.DryRun, "dry-run", false, "revert to original go.mod after running")
+	flag.BoolVar(&config.Verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
+	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
+	flag.StringVar(&config.Format, "format", defaultFormat, "output format (console, markdown, none)")
+	flag.StringVar(&config.GoModSrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
+	flag.StringVar(&config.GoModDst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
+	flag.IntVar(&config.Retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
+	flag.Parse()
+
+	config.Commands = commands
+}
