@@ -59,6 +59,8 @@ func TestMain(t *testing.T) {
 			executeTestExclude(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
 		} else if strings.HasSuffix(file, "exclude-no-positional.in") {
 			executeTestExclude(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
+		} else if strings.HasSuffix(file, "non-github.in") {
+			executeTest(t, file, strings.Replace(file, ".in", ".out", 1))
 		} else {
 			executeTest(t, file, strings.Replace(file, ".in", ".out", 1))
 		}

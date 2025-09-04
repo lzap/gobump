@@ -80,7 +80,7 @@ func InitConfig() {
 	flag.StringVar(&config.GoModSrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
 	flag.StringVar(&config.GoModDst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
 	flag.IntVar(&config.Retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
-	flag.BoolVar(&config.Changelog, "changelog", true, "print git changelog of all updated modules")
+	flag.BoolVar(&config.Changelog, "changelog", false, "print git changelog of all updated modules")
 	flag.StringVar(&config.ChangelogGistToken, "changelog-gist", "", "GitHub token to create a Gist with the changelog")
 	flag.Parse()
 

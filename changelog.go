@@ -45,7 +45,7 @@ type GistResponse struct {
 func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 	parts := strings.Split(modulePath, "/")
 	if len(parts) < 3 || parts[0] != "github.com" {
-		return "", fmt.Errorf("unsupported module host for changelog: %s", parts[0])
+		return "", nil
 	}
 	owner := parts[1]
 	repo := parts[2]
