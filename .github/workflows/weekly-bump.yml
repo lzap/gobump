@@ -19,4 +19,5 @@ jobs:
           exec: "go test ./..."
           labels: "fedora"
           development: true
+          changelog: true
   
