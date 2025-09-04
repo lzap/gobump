@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,7 +12,16 @@ import (
 func TestMain(t *testing.T) {
 	executeTest := func(t *testing.T, input, output string) {
 		t.Run(input, func(t *testing.T) {
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 			os.Args = []string{"test", "-dry-run", "-src-go-mod", input, "-dst-go-mod", output, "-exec", "echo ok", "-format", "none"}
+			main()
+		})
+	}
+
+	executeTestPositional := func(t *testing.T, input, output, dependency string) {
+		t.Run(input, func(t *testing.T) {
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+			os.Args = []string{"test", "-dry-run", "-src-go-mod", input, "-dst-go-mod", output, "-exec", "echo ok", "-format", "none", dependency}
 			main()
 		})
 	}
@@ -35,6 +45,10 @@ func TestMain(t *testing.T) {
 			continue
 		}
 
-		executeTest(t, file, strings.Replace(file, ".in", ".out", 1))
+		if strings.HasSuffix(file, "positional.in") {
+			executeTestPositional(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
+		} else {
+			executeTest(t, file, strings.Replace(file, ".in", ".out", 1))
+		}
 	}
 }

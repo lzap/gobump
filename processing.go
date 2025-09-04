@@ -100,7 +100,19 @@ func process(original *modfile.File) []Result {
 		out.Fatal(err.Error(), ERR_PARSE)
 	}
 
-	for _, r := range original.Require {
+	dependencies := original.Require
+	if len(config.Dependencies) > 0 {
+		dependencies = []*modfile.Require{}
+		for _, r := range original.Require {
+			for _, d := range config.Dependencies {
+				if r.Mod.Path == d {
+					dependencies = append(dependencies, r)
+				}
+			}
+		}
+	}
+
+	for _, r := range dependencies {
 		if r.Indirect {
 			continue
 		}

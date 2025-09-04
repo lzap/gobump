@@ -19,16 +19,17 @@ func (i *stringSlice) Set(value string) error {
 
 // AppConfig holds the application configuration
 type AppConfig struct {
-	DryRun   bool
-	Verbose  bool
-	Format   string
-	GoModSrc string
-	GoModDst string
-	Retries   int
-	Commands  stringSlice
+	DryRun             bool
+	Verbose            bool
+	Format             string
+	GoModSrc           string
+	GoModDst           string
+	Retries            int
+	Commands           stringSlice
 	GoBinary           string
 	Changelog          bool
 	ChangelogGistToken string
+	Dependencies       []string
 }
 
 var config *AppConfig
@@ -67,4 +68,5 @@ func InitConfig() {
 	flag.Parse()
 
 	config.Commands = commands
+	config.Dependencies = flag.Args()
 }
