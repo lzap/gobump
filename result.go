@@ -5,4 +5,5 @@ type Result struct {
 	Success       bool
 	VersionBefore string
 	VersionAfter  string
+	Excluded      bool
 }

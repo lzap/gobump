@@ -117,6 +117,24 @@ func process(original *modfile.File) []Result {
 			continue
 		}
 
+		excluded := false
+		for _, ex := range config.Exclude {
+			if r.Mod.Path == ex {
+				results = append(results, Result{
+					ModulePath:    r.Mod.Path,
+					VersionBefore: r.Mod.Version,
+					VersionAfter:  r.Mod.Version,
+					Success:       false,
+					Excluded:      true,
+				})
+				excluded = true
+				break
+			}
+		}
+		if excluded {
+			continue
+		}
+
 		newMod, upgradeSuccess := upgradeModule(proxy, r, okMod)
 
 		if upgradeSuccess {

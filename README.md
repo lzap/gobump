@@ -61,6 +61,8 @@ go install github.com/lzap/gobump@latest
     	path to go.mod destination file (default: go.mod) (default "go.mod")
   -exec value
     	exec command for each individual bump, can be used multiple times
+  -exclude string
+    	comma-separated list of modules to exclude from update
   -format string
     	output format (console, markdown, none) (default "console")
   -retries int
@@ -101,6 +103,7 @@ Summary legend:
 * `keep`: version is kept (no update available)
 * `update`: module updated to newer version
 * `err`: there was an error during the update; either the required Go version is too high, one of the `exec` commands failed, or another error occurred
+* `excluded`: module was excluded from update
 
 ## GitHub Action
 
@@ -135,6 +138,7 @@ Action inputs:
 * `setup_go`: Set to `false` to avoid the `setup-go` action (e.g., when a container with a specific Go version is used).
 * `exec`: An optional command to execute for each dependency update.
 * `exec2`: A second optional command to execute for each dependency update.
+* `exclude`: A comma-separated list of modules to exclude from the update.
 * `tidy`: Set to `false` to avoid executing `go mod tidy` after `gobump`.
 * `exec_pr`: An optional command to execute before a PR is made.
 * `pr`: Set to `false` to avoid the creation of a PR.

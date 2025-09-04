@@ -4,7 +4,21 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
+
+type commaSeparatedStringSlice []string
+
+func (i *commaSeparatedStringSlice) String() string {
+	return strings.Join(*i, ",")
+}
+
+func (i *commaSeparatedStringSlice) Set(value string) error {
+	if value != "" {
+		*i = strings.Split(value, ",")
+	}
+	return nil
+}
 
 type stringSlice []string
 
@@ -30,6 +44,7 @@ type AppConfig struct {
 	Changelog          bool
 	ChangelogGistToken string
 	Dependencies       []string
+	Exclude            commaSeparatedStringSlice
 }
 
 var config *AppConfig
@@ -56,9 +71,11 @@ func InitConfig() {
 	}
 
 	var commands stringSlice
+	var exclude commaSeparatedStringSlice
 	flag.BoolVar(&config.DryRun, "dry-run", false, "revert to original go.mod after running")
 	flag.BoolVar(&config.Verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
+	flag.Var(&exclude, "exclude", "comma-separated list of modules to exclude from update")
 	flag.StringVar(&config.Format, "format", defaultFormat, "output format (console, markdown, none)")
 	flag.StringVar(&config.GoModSrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
 	flag.StringVar(&config.GoModDst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
@@ -69,4 +86,5 @@ func InitConfig() {
 
 	config.Commands = commands
 	config.Dependencies = flag.Args()
+	config.Exclude = exclude
 }

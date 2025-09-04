@@ -47,6 +47,9 @@ inputs:
     description: "Print git changelog of all updated modules (default: true)"
     required: false
     default: "true"
+  exclude:
+    description: "Comma-separated list of modules to exclude from update"
+    required: false
 
 runs:
   using: "composite"
@@ -72,7 +75,7 @@ runs:
         if [[ "${{ inputs.changelog }}" == "true" ]]; then
           GIST_TOKEN="${{ inputs.token }}"
         fi
-        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" | tee /tmp/bump.log
+        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
 
     - name: Prepare development environment
       if: ${{ inputs.development == 'true' }}
@@ -96,7 +99,7 @@ runs:
         if [[ "${{ inputs.changelog }}" == "true" ]]; then
           GIST_TOKEN="${{ inputs.token }}"
         fi
-        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" | tee /tmp/bump.log
+        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}

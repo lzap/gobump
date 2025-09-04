@@ -84,7 +84,9 @@ func (out *OutputConsole) PrintSummary(results []Result) {
 
 	for _, r := range results {
 		action := "err"
-		if r.Success {
+		if r.Excluded {
+			action = "excluded"
+		} else if r.Success {
 			if r.VersionAfter == r.VersionBefore {
 				action = "keep"
 			} else {

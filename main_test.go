@@ -26,6 +26,14 @@ func TestMain(t *testing.T) {
 		})
 	}
 
+	executeTestExclude := func(t *testing.T, input, output, exclude string) {
+		t.Run(input, func(t *testing.T) {
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+			os.Args = []string{"test", "-dry-run", "-src-go-mod", input, "-dst-go-mod", output, "-exec", "echo ok", "-format", "none", "-exclude", exclude}
+			main()
+		})
+	}
+
 	// Clean up the project go.mod as indirect dependencies will be added
 	defer func() {
 		t.Log("Cleaning up go.mod")
@@ -47,6 +55,10 @@ func TestMain(t *testing.T) {
 
 		if strings.HasSuffix(file, "positional.in") {
 			executeTestPositional(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
+		} else if strings.HasSuffix(file, "exclude.in") {
+			executeTestExclude(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
+		} else if strings.HasSuffix(file, "exclude-no-positional.in") {
+			executeTestExclude(t, file, strings.Replace(file, ".in", ".out", 1), "github.com/sirupsen/logrus")
 		} else {
 			executeTest(t, file, strings.Replace(file, ".in", ".out", 1))
 		}
