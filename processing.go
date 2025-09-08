@@ -30,16 +30,18 @@ func validateUpgrade(originalMod, newMod *modfile.File) error {
 
 // upgradeModule attempts to upgrade a single module.
 func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool) {
+	var success bool
 	out.BeginPreformatted(config.GoBinary, "get", r.Mod.Path)
-	defer out.EndPreformattedCond(false) // Assume failure until success
+	defer out.EndPreformattedCond(success)
 
 	versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 	if err != nil {
 		out.Error("failed to fetch versions:", err.Error())
-		return okMod, false
+		return okMod, success
 	}
 	if len(versions) == 0 {
-		return okMod, true // No new versions
+		success = true
+		return okMod, success
 	}
 
 	for vi, version := range versions {
@@ -66,10 +68,10 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 		}
 
 		out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
-		out.EndPreformattedCond(true) // Mark as success
-		return newMod, true
+		success = true
+		return newMod, success
 	}
-	return okMod, false
+	return okMod, success
 }
 
 // runCommands executes post-upgrade commands.

@@ -68,7 +68,11 @@ func (out *OutputMarkdown) endBuffer(render bool) {
 		return
 	}
 
-	buf := out.w.(*bytes.Buffer)
+	buf, ok := out.w.(*bytes.Buffer)
+	if !ok {
+		// called End without Begin
+		return
+	}
 	out.w = out.Destination
 
 	if buf.Len() > 0 && render {
