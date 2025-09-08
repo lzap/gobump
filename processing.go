@@ -67,7 +67,9 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 			continue
 		}
 
-		out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
+		if config.Verbose {
+			out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
+		}
 		success = true
 		return newMod, success
 	}
