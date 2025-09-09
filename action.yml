@@ -47,9 +47,16 @@ inputs:
     description: "Print git changelog of all updated modules (default: true)"
     required: false
     default: "true"
+  include:
+    description: "Space-separated list of modules to update (default: all)"
+    required: false
   exclude:
     description: "Comma-separated list of modules to exclude from update"
     required: false
+  commit_message:
+    description: "Commit message for the PR other than 'chore: bump dependencies via gobump'"
+    required: false
+    default: "chore: bump dependencies via gobump"
 
 runs:
   using: "composite"
@@ -75,7 +82,7 @@ runs:
         if [[ "${{ inputs.changelog }}" == "true" ]]; then
           GIST_TOKEN="${{ inputs.token }}"
         fi
-        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
+        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Prepare development environment
       if: ${{ inputs.development == 'true' }}
@@ -124,7 +131,7 @@ runs:
       with:
         token: ${{ inputs.token }}
         branch: "gobump-deps-${{ github.run_id }}"
-        commit-message: "chore: bump Go dependencies"
+        commit-message: "${{ inputs.commit_message }}"
         title: "chore: bump dependencies via gobump"
         body-path: /tmp/bump.log
         labels: ${{ inputs.labels }}
