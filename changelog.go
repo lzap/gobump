@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -123,8 +124,8 @@ func createGist(token, description, content string) (string, error) {
 // PrintChangelogs prints the changelogs for all updated modules.
 func PrintChangelogs(results []Result) {
 	out.Println("\nGit Changelogs:")
-	
-	if config.ChangelogGistToken != "" {
+
+	if config.ChangelogDest == "gist" {
 		var fullChangelog strings.Builder
 		fullChangelog.WriteString("# GoBump Changelog\n\n")
 		for _, result := range results {
@@ -141,25 +142,37 @@ func PrintChangelogs(results []Result) {
 				}
 			}
 		}
-		gistURL, err := createGist(config.ChangelogGistToken, "GoBump Dependency Changelog", fullChangelog.String())
+		gistURL, err := createGist(os.Getenv("GITHUB_TOKEN"), "GoBump Dependency Changelog", fullChangelog.String())
 		if err != nil {
 			out.Error("Failed to create Gist:", err.Error())
 		} else {
 			out.Println("\nChangelog Gist created:", gistURL)
 		}
 	} else {
+		sb := strings.Builder{}
 		for _, result := range results {
 			if result.Success && result.VersionBefore != result.VersionAfter {
-				out.Println("\nModule:", result.ModulePath)
-				out.Println("Updated from", result.VersionBefore, "to", result.VersionAfter)
+				sb.WriteString(fmt.Sprintf("\nModule: %s\n", result.ModulePath))
+				sb.WriteString(fmt.Sprintf("Updated from %s to %s\n", result.VersionBefore, result.VersionAfter))
 				changelog, err := getChangelog(result.ModulePath, result.VersionBefore, result.VersionAfter)
 				if err != nil {
-					out.Error("Failed to get changelog:", err.Error())
+					sb.WriteString(fmt.Sprintf("Failed to get changelog: %s\n", err.Error()))
 				} else if changelog == "" {
-					out.Println("No commits found between versions.")
+					sb.WriteString("No commits found between versions.\n")
 				} else {
-					out.Println(changelog)
+					sb.WriteString(changelog)
 				}
+			}
+		}
+
+		if config.ChangelogDest == "stdout" {
+			out.Println(sb.String())
+		} else if config.ChangelogDest != "" {
+			err := os.WriteFile(config.ChangelogDest, []byte(sb.String()), 0644)
+			if err != nil {
+				out.Error("Failed to write changelog to file:", err.Error())
+			} else {
+				out.Println("Changelog written to file:", config.ChangelogDest)
 			}
 		}
 	}

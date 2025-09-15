@@ -33,18 +33,18 @@ func (i *stringSlice) Set(value string) error {
 
 // AppConfig holds the application configuration
 type AppConfig struct {
-	DryRun             bool
-	Verbose            bool
-	Format             string
-	GoModSrc           string
-	GoModDst           string
-	Retries            int
-	Commands           stringSlice
-	GoBinary           string
-	Changelog          bool
-	ChangelogGistToken string
-	Dependencies       []string
-	Exclude            commaSeparatedStringSlice
+	DryRun        bool
+	Verbose       bool
+	Format        string
+	GoModSrc      string
+	GoModDst      string
+	Retries       int
+	Commands      stringSlice
+	GoBinary      string
+	Changelog     bool
+	ChangelogDest string
+	Dependencies  []string
+	Exclude       commaSeparatedStringSlice
 }
 
 var config *AppConfig
@@ -81,7 +81,7 @@ func InitConfig() {
 	flag.StringVar(&config.GoModDst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
 	flag.IntVar(&config.Retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
 	flag.BoolVar(&config.Changelog, "changelog", false, "print git changelog of all updated modules")
-	flag.StringVar(&config.ChangelogGistToken, "changelog-gist", "", "GitHub token to create a Gist with the changelog")
+	flag.StringVar(&config.ChangelogDest, "changelog-dest", "stdout", "Destination of the changelog (\"stdout\", \"gist\" or a filename)")
 	flag.Parse()
 
 	config.Commands = commands
