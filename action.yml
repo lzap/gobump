@@ -44,7 +44,7 @@ inputs:
     required: false
     default: "false"
   changelog:
-    description: "Print git changelog of all updated modules (default: true)"
+    description: "Add changelog of all updated modules to commit message (default: true)"
     required: false
     default: "true"
   include:
@@ -78,11 +78,8 @@ runs:
       run: |
         go version
         go env
-        GIST_TOKEN=""
-        if [[ "${{ inputs.changelog }}" == "true" ]]; then
-          GIST_TOKEN="${{ inputs.token }}"
-        fi
-        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
+        GIST_TOKEN="${{ inputs.token }}"
+        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Prepare development environment
       if: ${{ inputs.development == 'true' }}
@@ -102,11 +99,8 @@ runs:
         GOTOOLCHAIN: local
         CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
-        GIST_TOKEN=""
-        if [[ "${{ inputs.changelog }}" == "true" ]]; then
-          GIST_TOKEN="${{ inputs.token }}"
-        fi
-        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-gist="$GIST_TOKEN" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
+        GIST_TOKEN="${{ inputs.token }}"
+        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}
@@ -125,13 +119,28 @@ runs:
       if: ${{ inputs.exec_pr != '' }}
       run: ${{ inputs.exec_pr }}
 
+    - name: Prepare commit message
+      id: prep_commit_msg
+      shell: bash
+      run: |
+        if [[ -f /tmp/changelog.txt ]]; then
+          CHANGELOG=$(cat /tmp/changelog.txt)
+          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "commit_message=${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
+        fi
+
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
       if: ${{ inputs.pr == 'true' }}
       with:
         token: ${{ inputs.token }}
         branch: "gobump-deps-${{ github.run_id }}"
-        commit-message: "${{ inputs.commit_message }}"
+        commit-message: "${{ steps.prep_commit_msg.outputs.commit_message }}"
         title: "chore: bump dependencies via gobump"
         body-path: /tmp/bump.log
         labels: ${{ inputs.labels }}
