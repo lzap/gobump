@@ -123,7 +123,6 @@ func createGist(token, description, content string) (string, error) {
 
 // PrintChangelogs prints the changelogs for all updated modules.
 func PrintChangelogs(results []Result) {
-	out.Println("\nGit Changelogs:")
 
 	if config.ChangelogDest == "gist" {
 		var fullChangelog strings.Builder
@@ -166,13 +165,12 @@ func PrintChangelogs(results []Result) {
 		}
 
 		if config.ChangelogDest == "stdout" {
+			out.Println("\nGit Changelogs:")
 			out.Println(sb.String())
 		} else if config.ChangelogDest != "" {
 			err := os.WriteFile(config.ChangelogDest, []byte(sb.String()), 0644)
 			if err != nil {
 				out.Error("Failed to write changelog to file:", err.Error())
-			} else {
-				out.Println("Changelog written to file:", config.ChangelogDest)
 			}
 		}
 	}
