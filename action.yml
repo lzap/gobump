@@ -44,9 +44,9 @@ inputs:
     required: false
     default: "false"
   changelog:
-    description: "Add changelog of all updated modules to commit message (default: true)"
+    description: "Add changelog of all updated modules to commit message"
     required: false
-    default: "true"
+    default: "false"
   include:
     description: "Space-separated list of modules to update (default: all)"
     required: false
