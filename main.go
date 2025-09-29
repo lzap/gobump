@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime/debug"
 )
 
 var (
@@ -10,6 +12,15 @@ var (
 
 func main() {
 	InitConfig()
+
+	if config.Version {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			fmt.Printf("%s %s\n", info.Main.Version, info.Main.Sum)
+			os.Exit(0)
+		}
+		fmt.Println("(devel) HEAD")
+		os.Exit(0)
+	}
 
 	switch config.Format {
 	case "markdown":

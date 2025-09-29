@@ -33,6 +33,7 @@ func (i *stringSlice) Set(value string) error {
 
 // AppConfig holds the application configuration
 type AppConfig struct {
+	Version       bool
 	DryRun        bool
 	Verbose       bool
 	Format        string
@@ -72,6 +73,7 @@ func InitConfig() {
 
 	var commands stringSlice
 	var exclude commaSeparatedStringSlice
+	flag.BoolVar(&config.Version, "version", false, "print Go binary debug info")
 	flag.BoolVar(&config.DryRun, "dry-run", false, "revert to original go.mod after running")
 	flag.BoolVar(&config.Verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
