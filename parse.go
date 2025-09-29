@@ -18,9 +18,6 @@ func parseMod(file string) (*modfile.File, error) {
 		return nil, fmt.Errorf("error parsing go.mod: %w", err)
 	}
 
-	if config.Verbose {
-		out.Println("parsed go.mod:", mod.Go.Version)
-	}
 	return mod, nil
 }
 
