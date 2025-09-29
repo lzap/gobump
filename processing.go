@@ -32,7 +32,7 @@ func validateUpgrade(originalMod, newMod *modfile.File) error {
 func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool) {
 	var success bool
 	out.BeginPreformatted(config.GoBinary, "get", r.Mod.Path)
-	defer out.EndPreformattedCond(success)
+	defer out.EndPreformattedCond(!success)
 
 	versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 	if err != nil {
@@ -122,18 +122,15 @@ func process(original *modfile.File) []Result {
 		}
 
 		excluded := false
-		for _, ex := range config.Exclude {
-			if r.Mod.Path == ex {
-				results = append(results, Result{
-					ModulePath:    r.Mod.Path,
-					VersionBefore: r.Mod.Version,
-					VersionAfter:  r.Mod.Version,
-					Success:       false,
-					Excluded:      true,
-				})
-				excluded = true
-				break
-			}
+		if slices.Contains(config.Exclude, r.Mod.Path) {
+			results = append(results, Result{
+				ModulePath:    r.Mod.Path,
+				VersionBefore: r.Mod.Version,
+				VersionAfter:  r.Mod.Version,
+				Success:       false,
+				Excluded:      true,
+			})
+			excluded = true
 		}
 		if excluded {
 			continue
