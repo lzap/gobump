@@ -11,6 +11,7 @@ import (
 type OutputMarkdown struct {
 	Destination io.Writer
 	w           io.Writer
+	wInitial    int
 }
 
 var _ Output = (*OutputMarkdown)(nil)
@@ -56,7 +57,9 @@ func (out *OutputMarkdown) BeginPreformatted(text ...any) {
 		return
 	}
 
-	fmt.Fprintf(out.w, "\n<details><summary>%s</summary>\n\n```\n", joinAny(text...))
+	initial := fmt.Sprintf("\n<details><summary>%s</summary>\n\n```\n", joinAny(text...))
+	fmt.Fprint(out.w, initial)
+	out.wInitial = len(initial)
 }
 
 func (out *OutputMarkdown) EndPreformatted(text ...any) {
@@ -73,15 +76,13 @@ func (out *OutputMarkdown) endBuffer(render bool) {
 		// called End without Begin
 		return
 	}
+
+	if render && buf.Len() > out.wInitial {
+		fmt.Fprintf(out.w, "%s\n\n```\n\n</details>\n", buf.String())
+	}
+
 	out.w = out.Destination
-
-	if buf.Len() > 0 && render {
-		fmt.Fprint(out.w, buf.String())
-	}
-
-	if render {
-		fmt.Fprintf(out.w, "```\n</details>\n")
-	}
+	out.wInitial = 0
 }
 
 func (out *OutputMarkdown) EndPreformattedCond(render bool, text ...any) {
