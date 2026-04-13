@@ -134,12 +134,22 @@ runs:
           echo "commit_message=${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
         fi
 
+    - name: Prepare unique branch name
+      id: unique_branch
+      if: ${{ inputs.pr == 'true' }}
+      shell: bash
+      run: |
+        DATE=$(date -u +%Y-%m-%d)
+        RAND=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom 2>/dev/null | head -c 6)
+        RAND=${RAND:-$(printf '%06x' "$((RANDOM * 65536 + RANDOM))")}
+        echo "branch=gobump-${DATE}-${RAND}" >> "$GITHUB_OUTPUT"
+
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
       if: ${{ inputs.pr == 'true' }}
       with:
         token: ${{ inputs.token }}
-        branch: "gobump-deps-${{ github.run_id }}"
+        branch: ${{ steps.unique_branch.outputs.branch }}
         commit-message: "${{ steps.prep_commit_msg.outputs.commit_message }}"
         title: "chore: bump dependencies via gobump"
         body-path: /tmp/bump.log
