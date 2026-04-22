@@ -151,6 +151,6 @@ runs:
         token: ${{ inputs.token }}
         branch: ${{ steps.unique_branch.outputs.branch }}
         commit-message: "${{ steps.prep_commit_msg.outputs.commit_message }}"
-        title: "chore: bump dependencies via gobump"
+        title: "${{ inputs.commit_message }}"
         body-path: /tmp/bump.log
         labels: ${{ inputs.labels }}
