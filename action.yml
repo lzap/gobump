@@ -63,7 +63,7 @@ runs:
   steps:
     - name: Set up Go environment
       if: ${{ inputs.setup_go == 'true' }}
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ inputs.go_version }}
         cache: 'true'
