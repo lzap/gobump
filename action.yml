@@ -33,7 +33,7 @@ inputs:
     required: false
     default: "true"
   exec_pr:
-    description: "Command to execute before PR is made (bash shell)"
+    description: "Bash snippet run before the PR step; always succeeds. Combined stdout/stderr and exit code are appended to the commit message."
     required: false
   pr:
     description: "Create a pull request with the changes"
@@ -117,21 +117,40 @@ runs:
         CGO_ENABLED: ${{ inputs.cgo_enabled }}
       shell: bash
       if: ${{ inputs.exec_pr != '' }}
-      run: ${{ inputs.exec_pr }}
+      run: |
+        set +e
+        (
+        ${{ inputs.exec_pr }}
+        ) > /tmp/exec_pr.log 2>&1
+        pr_ec=$?
+        echo "$pr_ec" > /tmp/exec_pr.exit
 
     - name: Prepare commit message
       id: prep_commit_msg
       shell: bash
       run: |
-        if [[ -f /tmp/changelog.txt ]]; then
-          CHANGELOG=$(cat /tmp/changelog.txt)
-          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+        multiline=false
+        [[ -f /tmp/changelog.txt ]] && multiline=true
+        [[ -f /tmp/exec_pr.exit ]] && multiline=true
+
+        if [[ "$multiline" == true ]]; then
+          {
+            echo "commit_message<<COMMIT_MSG_EOF"
+            echo "${{ inputs.commit_message }}"
+            if [[ -f /tmp/changelog.txt ]]; then
+              echo ""
+              cat /tmp/changelog.txt
+            fi
+            if [[ -f /tmp/exec_pr.exit ]]; then
+              echo ""
+              echo "---"
+              echo "exec_pr (exit $(cat /tmp/exec_pr.exit)):"
+              cat /tmp/exec_pr.log
+            fi
+            echo "COMMIT_MSG_EOF"
+          } >> "$GITHUB_OUTPUT"
         else
-          echo "commit_message=${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
+          echo "commit_message=${{ inputs.commit_message }}" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Prepare unique branch name
