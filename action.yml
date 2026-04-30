@@ -158,10 +158,7 @@ runs:
       if: ${{ inputs.pr == 'true' }}
       shell: bash
       run: |
-        DATE=$(date -u +%Y-%m-%d)
-        RAND=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom 2>/dev/null | head -c 6)
-        RAND=${RAND:-$(printf '%06x' "$((RANDOM * 65536 + RANDOM))")}
-        echo "branch=gobump-${DATE}-${RAND}" >> "$GITHUB_OUTPUT"
+        echo "branch=$(date -u +gobump-%Y-%m-%d-%H%M%S%N)" >> "$GITHUB_OUTPUT"
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
