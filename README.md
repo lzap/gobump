@@ -169,14 +169,14 @@ Tip: When building or testing in a container, use `-buildvcs=false` to avoid `gi
 * Loads the project's `go.mod` and stores it in memory.
 * For each direct dependency, it asks the configured module proxy for `@v/list`, then runs `go get MODULE@V` for up to `-retries` newer versions (newest first). This is not the same as `go get MODULE@latest` in one shot, but it walks backward through recent releases when an upgrade fails.
 * If the `go get` command fails (for example when `GOTOOLCHAIN` is pinned) or modifies the Go version in `go.mod`, it reverts to the last version of `go.mod` and tries again with the next lower version until it succeeds or runs out of attempts.
-* If and only if a module succeeds in updating to a newer version and one or more optional `exec` arguments are passed, it executes them. If the proxy had no newer versions, `exec` is skipped for that module. If any of the commands fail, it reverts to the last `go.mod` version.
+* If and only if a module succeeds in updating to a newer version and one or more optional `exec` arguments are passed, it executes them for that candidate. If the proxy had no newer versions, `exec` is skipped for that module. If any `exec` fails, it reverts to the last good `go.mod` and tries the next older candidate version, up to the retry limit. The same applies when `go get` fails or the Go directive would change.
 * Repeats for every other direct dependency.
 
 It is recommended to set `GOTOOLCHAIN` to an explicit Go version to speed up the failure of `go get` because, with a specific Go version, it immediately fails and does not even attempt to download and install packages, which would lead to a `go.mod` change.
 
 ## Custom commands
 
-For every updated dependency, it is possible to run one or more commands to ensure the project builds or tests are passing. Use the `-exec` option multiple times to do that. When such a command returns a non-zero value, it is considered a failure, and that update is rolled back.
+For every updated dependency, it is possible to run one or more commands to ensure the project builds or tests are passing. Use the `-exec` option multiple times to do that. When such a command returns a non-zero value, that candidate version is rolled back and an older version is tried, up to `-retries` times (same as when `go get` fails).
 
 ```
 gobump -exec "go build ./..." -exec "go test ./..."

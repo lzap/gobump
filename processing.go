@@ -73,14 +73,20 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 		if config.Verbose {
 			out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
 		}
+
+		if !runCommands(okMod) {
+			continue
+		}
+
 		success = true
 		return newMod, success, false
 	}
 	return okMod, success, false
 }
 
-// runCommands executes post-upgrade commands.
-func runCommands(mod *modfile.File) bool {
+// runCommands executes post-upgrade commands against the current go.mod on disk
+// (expected to match a successful upgrade). On failure it restores revertTo.
+func runCommands(revertTo *modfile.File) bool {
 	for _, c := range config.Commands {
 		if c == "" {
 			continue
@@ -88,7 +94,7 @@ func runCommands(mod *modfile.File) bool {
 		out.BeginPreformatted(c)
 		if err := cmds(c); err != nil {
 			out.Error("tests failed, reverting go.mod")
-			if err := saveMod(config.GoModDst, mod); err != nil {
+			if err := saveMod(config.GoModDst, revertTo); err != nil {
 				out.Error("failed to revert go.mod:", err.Error())
 			}
 			out.EndPreformattedCond(false)
@@ -142,15 +148,6 @@ func process(original *modfile.File) []Result {
 		}
 
 		newMod, upgradeSuccess, noProxyVersions := upgradeModule(proxy, r, okMod)
-
-		if upgradeSuccess && !noProxyVersions {
-			if !runCommands(newMod) {
-				upgradeSuccess = false
-				if err := saveMod(config.GoModDst, okMod); err != nil {
-					out.Error("failed to revert go.mod:", err.Error())
-				}
-			}
-		}
 
 		versionAfter := r.Mod.Version
 		if newMod != nil {
