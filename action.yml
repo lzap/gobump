@@ -57,6 +57,10 @@ inputs:
     description: "Commit message for the PR other than 'chore: bump dependencies via gobump'"
     required: false
     default: "chore: bump dependencies via gobump"
+  single_commit:
+    description: "If true, skip per-dependency git commits and git reset on failure. When false (default), each successful bump is committed as chore(deps): update … when running in a git work tree with no staged changes."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -79,7 +83,7 @@ runs:
         go version
         go env
         GIST_TOKEN="${{ inputs.token }}"
-        go run github.com/lzap/gobump@latest -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
+        go run github.com/lzap/gobump@latest -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Prepare development environment
       if: ${{ inputs.development == 'true' }}
@@ -100,7 +104,7 @@ runs:
         CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
         GIST_TOKEN="${{ inputs.token }}"
-        go run . -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
+        go run . -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}

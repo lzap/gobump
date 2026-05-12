@@ -104,6 +104,8 @@ func process(original *modfile.File) []Result {
 		out.Fatal(err.Error(), ERR_PARSE)
 	}
 
+	perDepGit := perDependencyGitEnabled()
+
 	dependencies := original.Require
 	if len(config.Dependencies) > 0 {
 		dependencies = []*modfile.Require{}
@@ -147,9 +149,32 @@ func process(original *modfile.File) []Result {
 			}
 		}
 
+		versionAfter := r.Mod.Version
+		if newMod != nil {
+			mi := slices.IndexFunc(newMod.Require, func(re *modfile.Require) bool {
+				return re.Mod.Path == r.Mod.Path
+			})
+			if mi != -1 {
+				versionAfter = newMod.Require[mi].Mod.Version
+			}
+		}
+
+		if perDepGit {
+			if !upgradeSuccess {
+				if err := gitResetHardHEAD(); err != nil {
+					out.Error("git reset --hard HEAD failed:", err.Error())
+				}
+			} else if versionAfter != r.Mod.Version && gitWorktreeDiffersFromHEAD() {
+				if err := gitCommitDependencyBump(r.Mod.Path, versionAfter); err != nil {
+					out.Error("git commit failed:", err.Error())
+				}
+			}
+		}
+
 		result := Result{
 			ModulePath:    r.Mod.Path,
 			VersionBefore: r.Mod.Version,
+			VersionAfter:  versionAfter,
 		}
 
 		if upgradeSuccess {
@@ -159,15 +184,6 @@ func process(original *modfile.File) []Result {
 			result.Success = false
 		}
 
-		if newMod != nil {
-			mi := slices.IndexFunc(newMod.Require, func(re *modfile.Require) bool {
-				return re.Mod.Path == r.Mod.Path
-			})
-			if mi != -1 {
-				newRequire := newMod.Require[mi]
-				result.VersionAfter = newRequire.Mod.Version
-			}
-		}
 		results = append(results, result)
 	}
 
