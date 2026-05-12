@@ -13,7 +13,7 @@ inputs:
     required: false
     default: "0"
   token:
-    description: "GitHub token with permissions to push branches and open PRs"
+    description: "GitHub token with permissions to push branches and open PRs; also used for optional changelog Gist (GITHUB_TOKEN / GH_TOKEN in the step environment)"
     required: true
   exec:
     description: "String to pass via gobump -exec argument (no shell expansion)"
@@ -79,10 +79,10 @@ runs:
       env:
         GOTOOLCHAIN: local
         CGO_ENABLED: ${{ inputs.cgo_enabled }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         go version
         go env
-        GIST_TOKEN="${{ inputs.token }}"
         go run github.com/lzap/gobump@latest -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Prepare development environment
@@ -102,9 +102,11 @@ runs:
       env:
         GOTOOLCHAIN: local
         CGO_ENABLED: ${{ inputs.cgo_enabled }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
-        GIST_TOKEN="${{ inputs.token }}"
-        go run . -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" | tee /tmp/bump.log
+        go version
+        go env
+        go run . -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}
