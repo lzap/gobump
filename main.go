@@ -31,6 +31,10 @@ func main() {
 		out = &OutputNone{}
 	}
 
+	if err := errIfUnsafeGitWorktree(); err != nil {
+		out.Fatal(err.Error(), ERR_GIT)
+	}
+
 	out.Begin()
 	defer out.End()
 

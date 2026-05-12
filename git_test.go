@@ -19,9 +19,9 @@ func TestPerDependencyGitEnabled(t *testing.T) {
 	}
 
 	config = &AppConfig{
-		GoModDst:     "go.mod",
-		SingleCommit: false,
-		DryRun:       false,
+		GoModDst: "go.mod",
+		NoGit:    false,
+		DryRun:   false,
 	}
 	if perDependencyGitEnabled() {
 		t.Fatal("expected false without git repository")
@@ -47,7 +47,7 @@ func TestPerDependencyGitEnabled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !perDependencyGitEnabled() {
-		t.Fatal("expected true in clean repo without staged changes")
+		t.Fatal("expected true in clean repo without uncommitted changes")
 	}
 
 	if err := os.WriteFile(readme, []byte("b\n"), 0644); err != nil {
@@ -57,7 +57,7 @@ func TestPerDependencyGitEnabled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if perDependencyGitEnabled() {
-		t.Fatal("expected false when staged changes exist")
+		t.Fatal("expected false when uncommitted changes exist")
 	}
 
 	if err := exec.Command("git", "reset", "HEAD").Run(); err != nil {
@@ -67,14 +67,73 @@ func TestPerDependencyGitEnabled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config.SingleCommit = true
+	config.NoGit = true
 	if perDependencyGitEnabled() {
-		t.Fatal("expected false when SingleCommit is true")
+		t.Fatal("expected false when NoGit is true")
 	}
-	config.SingleCommit = false
+	config.NoGit = false
 
 	config.DryRun = true
 	if perDependencyGitEnabled() {
 		t.Fatal("expected false when DryRun is true")
+	}
+}
+
+func TestErrIfUnsafeGitWorktree(t *testing.T) {
+	tmp := t.TempDir()
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(oldWd) })
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatal(err)
+	}
+
+	config = &AppConfig{NoGit: false, DryRun: false}
+	if err := errIfUnsafeGitWorktree(); err != nil {
+		t.Fatalf("expected nil without git repo: %v", err)
+	}
+
+	if err := exec.Command("git", "init").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "config", "user.email", "t@test").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "config", "user.name", "t").Run(); err != nil {
+		t.Fatal(err)
+	}
+	readme := filepath.Join(tmp, "README")
+	if err := os.WriteFile(readme, []byte("a\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "add", "README").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "commit", "-m", "init").Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := errIfUnsafeGitWorktree(); err != nil {
+		t.Fatalf("expected nil in clean repo: %v", err)
+	}
+
+	if err := os.WriteFile(readme, []byte("dirty\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := errIfUnsafeGitWorktree(); err == nil {
+		t.Fatal("expected error when work tree has uncommitted changes")
+	}
+
+	config.NoGit = true
+	if err := errIfUnsafeGitWorktree(); err != nil {
+		t.Fatalf("expected nil with -no-git: %v", err)
+	}
+	config.NoGit = false
+
+	config.DryRun = true
+	if err := errIfUnsafeGitWorktree(); err != nil {
+		t.Fatalf("expected nil with dry-run: %v", err)
 	}
 }

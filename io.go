@@ -12,6 +12,7 @@ const (
 	ERR_WRITE = 3
 	ERR_PARSE = 4
 	ERR_CMD   = 5
+	ERR_GIT   = 6
 )
 
 func cmd(cmd string, args ...string) error {

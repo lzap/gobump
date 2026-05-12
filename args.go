@@ -46,7 +46,7 @@ type AppConfig struct {
 	ChangelogDest string
 	Dependencies  []string
 	Exclude       commaSeparatedStringSlice
-	SingleCommit  bool
+	NoGit         bool
 	ModuleProxy   string
 	FailOnError   bool
 }
@@ -87,7 +87,7 @@ func InitConfig() {
 	flag.IntVar(&config.Retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
 	flag.BoolVar(&config.Changelog, "changelog", false, "print git changelog of all updated modules")
 	flag.StringVar(&config.ChangelogDest, "changelog-dest", "stdout", "Destination of the changelog (\"stdout\", \"gist\" or a filename)")
-	flag.BoolVar(&config.SingleCommit, "single-commit", false, "if true, skip per-dependency git commits and reset/clean on failure (default: false)")
+	flag.BoolVar(&config.NoGit, "no-git", false, "if true, skip all git operations (no per-dependency commits or reset/clean on failure)")
 	flag.StringVar(&config.ModuleProxy, "proxy", "", "module proxy base URL (default: first usable $GOPROXY entry, else https://proxy.golang.org)")
 	flag.BoolVar(&config.FailOnError, "fail-on-error", false, "exit with status 1 if any non-excluded module failed to update")
 	flag.Parse()

@@ -10,16 +10,40 @@ import (
 )
 
 func perDependencyGitEnabled() bool {
-	if config.SingleCommit || config.DryRun {
+	if config.NoGit || config.DryRun {
 		return false
 	}
 	if !gitInsideWorkTree() {
 		return false
 	}
-	if gitHasStagedChanges() {
+	if gitHasUncommittedChanges() {
 		return false
 	}
 	return true
+}
+
+// errIfUnsafeGitWorktree returns an error when the repository has local changes
+// and gobump would use git, so the user can opt out explicitly with -no-git.
+func errIfUnsafeGitWorktree() error {
+	if config.NoGit || config.DryRun {
+		return nil
+	}
+	if !gitInsideWorkTree() {
+		return nil
+	}
+	if !gitHasUncommittedChanges() {
+		return nil
+	}
+	return fmt.Errorf("refusing to run: git work tree has uncommitted changes. Commit or stash your changes first, or pass -no-git to skip all git integration (no commits, reset, or clean)")
+}
+
+func gitHasUncommittedChanges() bool {
+	outBytes, err := exec.Command("git", "status", "--porcelain").Output()
+	if err != nil {
+		// If status fails inside a work tree, treat as unsafe.
+		return true
+	}
+	return strings.TrimSpace(string(outBytes)) != ""
 }
 
 func gitInsideWorkTree() bool {
@@ -28,19 +52,6 @@ func gitInsideWorkTree() bool {
 		return false
 	}
 	return strings.TrimSpace(string(outBytes)) == "true"
-}
-
-func gitHasStagedChanges() bool {
-	err := exec.Command("git", "diff", "--cached", "--quiet").Run()
-	if err == nil {
-		return false
-	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-		return true
-	}
-	// Treat unexpected git errors as "unsafe": do not enable per-dependency git mode.
-	return true
 }
 
 func gitRun(args ...string) error {

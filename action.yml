@@ -57,8 +57,8 @@ inputs:
     description: "Commit message for the PR other than 'chore: bump dependencies via gobump'"
     required: false
     default: "chore: bump dependencies via gobump"
-  single_commit:
-    description: "If true, skip per-dependency git commits and reset/clean on failure. When false (default), each successful bump is committed as chore(deps): update … when running in a git work tree with no staged changes."
+  no_git:
+    description: "If true, skip all gobump git operations (no per-dependency commits or reset/clean on failure). When false (default), each successful bump may be committed as chore(deps): update … when the work tree has no uncommitted changes."
     required: false
     default: "false"
 
@@ -83,7 +83,7 @@ runs:
       run: |
         go version
         go env
-        go run github.com/lzap/gobump@latest -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
+        go run github.com/lzap/gobump@latest -no-git=${{ inputs.no_git }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Prepare development environment
       if: ${{ inputs.development == 'true' }}
@@ -106,7 +106,7 @@ runs:
       run: |
         go version
         go env
-        go run . -single-commit=${{ inputs.single_commit }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
+        go run . -no-git=${{ inputs.no_git }} -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
     - name: Run go mod tidy
       if: ${{ inputs.tidy == 'true' }}
