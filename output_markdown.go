@@ -123,13 +123,17 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 
 func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintf(out.w, "\n## Summary\n\n")
-	fmt.Fprintln(out.w, "|Module|[A](## \"U-update,E=error,X=excluded,dash-no action\")|Version|")
-	fmt.Fprintln(out.w, "|---|---|---|")
+	fmt.Fprintln(out.w, "| Module | Status | Version |")
+	fmt.Fprintln(out.w, "| --- | --- | --- |")
+	fmt.Fprintln(out.w, "")
+	fmt.Fprintln(out.w, "Status: **U** updated, **E** error, **X** excluded, **N** no newer versions on module proxy, **-** unchanged.")
 
 	for _, r := range results {
 		action := "E"
 		if r.Excluded {
 			action = "X"
+		} else if r.NoProxyVersions {
+			action = "N"
 		} else if r.Success {
 			if r.VersionAfter == r.VersionBefore {
 				action = "-"

@@ -53,4 +53,7 @@ func main() {
 	if config.Changelog {
 		PrintChangelogs(results)
 	}
+	if config.FailOnError && resultsHaveErrors(results) {
+		os.Exit(1)
+	}
 }

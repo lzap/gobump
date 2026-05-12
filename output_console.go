@@ -7,6 +7,7 @@ import (
 )
 
 type OutputConsole struct{}
+
 var _ Output = (*OutputConsole)(nil)
 
 func (out *OutputConsole) Begin(text ...any) {
@@ -86,6 +87,8 @@ func (out *OutputConsole) PrintSummary(results []Result) {
 		action := "err"
 		if r.Excluded {
 			action = "excluded"
+		} else if r.NoProxyVersions {
+			action = "noop"
 		} else if r.Success {
 			if r.VersionAfter == r.VersionBefore {
 				action = "keep"

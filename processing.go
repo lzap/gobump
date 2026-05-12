@@ -29,19 +29,22 @@ func validateUpgrade(originalMod, newMod *modfile.File) error {
 }
 
 // upgradeModule attempts to upgrade a single module.
-func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool) {
+// The bool is success; the third return is true when the proxy listed no newer versions (no go get run).
+func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*modfile.File, bool, bool) {
 	var success bool
+	var noProxyVersions bool
 	out.BeginPreformatted(config.GoBinary, "get", r.Mod.Path)
 	defer out.EndPreformattedCond(!success)
 
 	versions, err := proxy.FetchVersions(r.Mod.Path, r.Mod.Version)
 	if err != nil {
 		out.Error("failed to fetch versions:", err.Error())
-		return okMod, success
+		return okMod, success, false
 	}
 	if len(versions) == 0 {
 		success = true
-		return okMod, success
+		noProxyVersions = true
+		return okMod, success, noProxyVersions
 	}
 
 	for vi, version := range versions {
@@ -60,7 +63,7 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 		}
 
 		if err := validateUpgrade(okMod, newMod); err != nil {
-			out.Error(err.Error(), ", reverting go.mod")
+			out.Error(fmt.Sprintf("%s; reverting go.mod", err.Error()))
 			if err := saveMod(config.GoModDst, okMod); err != nil {
 				out.Error("failed to revert go.mod:", err.Error())
 			}
@@ -71,9 +74,9 @@ func upgradeModule(proxy *GoProxy, r *modfile.Require, okMod *modfile.File) (*mo
 			out.Println("compare", okMod.Go.Version, " => ", newMod.Go.Version)
 		}
 		success = true
-		return newMod, success
+		return newMod, success, false
 	}
-	return okMod, success
+	return okMod, success, false
 }
 
 // runCommands executes post-upgrade commands.
@@ -98,7 +101,7 @@ func runCommands(mod *modfile.File) bool {
 
 func process(original *modfile.File) []Result {
 	var results []Result
-	proxy := NewGoProxy("")
+	proxy := NewGoProxy(config.ModuleProxy)
 	okMod, err := parseMod(config.GoModSrc)
 	if err != nil {
 		out.Fatal(err.Error(), ERR_PARSE)
@@ -138,9 +141,9 @@ func process(original *modfile.File) []Result {
 			continue
 		}
 
-		newMod, upgradeSuccess := upgradeModule(proxy, r, okMod)
+		newMod, upgradeSuccess, noProxyVersions := upgradeModule(proxy, r, okMod)
 
-		if upgradeSuccess {
+		if upgradeSuccess && !noProxyVersions {
 			if !runCommands(newMod) {
 				upgradeSuccess = false
 				if err := saveMod(config.GoModDst, okMod); err != nil {
@@ -172,9 +175,10 @@ func process(original *modfile.File) []Result {
 		}
 
 		result := Result{
-			ModulePath:    r.Mod.Path,
-			VersionBefore: r.Mod.Version,
-			VersionAfter:  versionAfter,
+			ModulePath:      r.Mod.Path,
+			VersionBefore:   r.Mod.Version,
+			VersionAfter:    versionAfter,
+			NoProxyVersions: noProxyVersions,
 		}
 
 		if upgradeSuccess {
