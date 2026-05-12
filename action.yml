@@ -166,6 +166,16 @@ runs:
       run: |
         echo "branch=$(date -u +gobump-%Y-%m-%d-%H%M%S%N)" >> "$GITHUB_OUTPUT"
 
+    - name: Log commits and git status before PR
+      if: ${{ inputs.pr == 'true' }}
+      shell: bash
+      run: |
+        echo "=== Commits added by gobump ==="
+        git log --oneline --decorate --graph origin/${{ github.ref_name }}..${{ github.ref_name }} || echo "No new commits"
+        echo ""
+        echo "=== Git status (uncommitted files) ==="
+        git status --short --untracked-files=all
+
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
       if: ${{ inputs.pr == 'true' }}
