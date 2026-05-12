@@ -1,4 +1,4 @@
-.PHONY: install tidy tag
+.PHONY: install tidy release
 
 install:
 	go install ./...
@@ -6,6 +6,6 @@ install:
 tidy:
 	go mod tidy
 
-# Create git tag v1.<X> (see scripts/next_v1_tag.sh).
-tag:
-	@bash scripts/next_v1_tag.sh
+# Tag v1.<X+1>, push all tags, warm proxy.golang.org for this module (see scripts/release.sh).
+release:
+	@bash scripts/release.sh
