@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 
@@ -13,15 +15,39 @@ import (
 
 type GoProxy struct {
 	baseURL string
+	client  *http.Client
 }
 
-func NewGoProxy(baseURL string) *GoProxy {
-	if baseURL == "" {
-		baseURL = "https://proxy.golang.org"
+// ModuleProxyBaseURL resolves the module proxy base URL: a non-empty
+// explicit base URL, else the first usable entry in $GOPROXY, else the public proxy.
+func ModuleProxyBaseURL(explicit string) string {
+	explicit = strings.TrimSpace(explicit)
+	if explicit != "" {
+		return strings.TrimSuffix(explicit, "/")
 	}
+	gp := strings.TrimSpace(os.Getenv("GOPROXY"))
+	if gp == "" {
+		return "https://proxy.golang.org"
+	}
+	for _, p := range strings.Split(gp, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" || p == "direct" || p == "off" {
+			continue
+		}
+		if strings.HasPrefix(p, "file://") {
+			continue
+		}
+		return strings.TrimSuffix(p, "/")
+	}
+	return "https://proxy.golang.org"
+}
 
-	baseURL = strings.TrimSuffix(baseURL, "/")
-	return &GoProxy{baseURL: baseURL}
+func NewGoProxy(configured string) *GoProxy {
+	base := ModuleProxyBaseURL(configured)
+	return &GoProxy{
+		baseURL: base,
+		client:  newHTTPClient(),
+	}
 }
 
 func isPreRelease(version string) bool {
@@ -39,7 +65,14 @@ func (p *GoProxy) FetchVersions(modName string, version string) ([]module.Versio
 		return nil, fmt.Errorf("failed to escape module path: %w", err)
 	}
 
-	resp, err := http.Get(fmt.Sprintf("%s/%s/@v/list", p.baseURL, modName))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+		fmt.Sprintf("%s/%s/@v/list", p.baseURL, modName), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+	setDefaultHTTPHeaders(req)
+
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch versions: %w", err)
 	}

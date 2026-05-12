@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -42,6 +43,13 @@ type GistResponse struct {
 	HTMLURL string `json:"html_url"`
 }
 
+func shortCommitSHA(sha string) string {
+	if len(sha) <= 7 {
+		return sha
+	}
+	return sha[:7]
+}
+
 // getChangelog fetches the changelog for a module from GitHub.
 func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 	parts := strings.Split(modulePath, "/")
@@ -53,7 +61,16 @@ func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/compare/%s...%s", owner, repo, fromVersion, toVersion)
 
-	resp, err := http.Get(apiURL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to build GitHub request: %w", err)
+	}
+	setDefaultHTTPHeaders(req)
+	if tok := githubToken(); tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+
+	resp, err := newHTTPClient().Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch changelog from GitHub: %w", err)
 	}
@@ -71,7 +88,7 @@ func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 	var changelog strings.Builder
 	for _, commit := range compareResp.Commits {
 		firstLine := strings.Split(commit.Commit.Message, "\n")[0]
-		changelog.WriteString(fmt.Sprintf("* %s: %s (%s)\n", commit.SHA[:7], firstLine, commit.Commit.Author.Name))
+		changelog.WriteString(fmt.Sprintf("* %s: %s (%s)\n", shortCommitSHA(commit.SHA), firstLine, commit.Commit.Author.Name))
 	}
 
 	return changelog.String(), nil
@@ -94,15 +111,16 @@ func createGist(token, description, content string) (string, error) {
 		return "", fmt.Errorf("failed to marshal Gist request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://api.github.com/gists", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://api.github.com/gists", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return "", fmt.Errorf("failed to create Gist request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "token "+token)
 	req.Header.Set("Content-Type", "application/json")
+	setDefaultHTTPHeaders(req)
 
-	client := &http.Client{}
+	client := newHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to send Gist request: %w", err)
@@ -141,7 +159,12 @@ func PrintChangelogs(results []Result) {
 				}
 			}
 		}
-		gistURL, err := createGist(os.Getenv("GITHUB_TOKEN"), "GoBump Dependency Changelog", fullChangelog.String())
+		token := githubToken()
+		if token == "" {
+			out.Error("Failed to create Gist: no GITHUB_TOKEN or GH_TOKEN set")
+			return
+		}
+		gistURL, err := createGist(token, "GoBump Dependency Changelog", fullChangelog.String())
 		if err != nil {
 			out.Error("Failed to create Gist:", err.Error())
 		} else {
