@@ -6,6 +6,6 @@ install:
 tidy:
 	go mod tidy
 
-# Create git tag v1.<X> (see scripts/next_v1_tag.py).
+# Create git tag v1.<X> (see scripts/next_v1_tag.sh).
 tag:
-	@python3 scripts/next_v1_tag.py
+	@bash scripts/next_v1_tag.sh
