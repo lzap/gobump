@@ -1,3 +1,4 @@
 /.vscode
 /gobump
 /bump.log
+__pycache__/
