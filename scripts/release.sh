@@ -26,7 +26,7 @@ git tag "$newtag"
 printf 'git push --tags\n'
 git push --tags
 
-module=$(go list -m -q)
+module=$(go list -m -f '{{.Path}}')
 printf 'go list -m (warm GOPROXY) %s@%s\n' "$module" "$newtag"
 # Resolve this version through the public proxy so it fetches the new tag from VCS.
 GOPROXY=https://proxy.golang.org,direct go list -m "${module}@${newtag}"
