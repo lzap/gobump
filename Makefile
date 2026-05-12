@@ -6,6 +6,6 @@ install:
 tidy:
 	go mod tidy
 
-# Tag v1.<X+1>, push all tags, warm proxy.golang.org for this module (see scripts/release.sh).
+# Tag next v1.<minor>.0, push tags, warm proxy (see scripts/release.sh).
 release:
 	@bash scripts/release.sh

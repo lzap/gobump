@@ -1,6 +1,11 @@
 #!/usr/bin/bash
 #
-# Release: next v1.<X> tag (patch segment ignored), push tags, warm proxy.golang.org.
+# Release: next semver tag v1.<minor>.0, push tags, warm proxy.golang.org.
+#
+# Go modules and the proxy require three-part versions (e.g. v1.2.0); v1.2 alone
+# is not a valid module version. We bump <minor> and always use patch .0.
+#
+# Parsing: v1.MINOR.PATCH → MINOR; v1.MINOR (two segments) → MINOR for legacy tags.
 #
 # Run from the repository root (e.g. make release).
 
@@ -9,18 +14,28 @@ cd "$(git rev-parse --show-toplevel)"
 
 mapfile -t tags < <(git tag -l 'v1.*')
 
-latest=0
+max_minor=-1
 for t in "${tags[@]}"; do
 	[[ -n "$t" ]] || continue
-	[[ "$t" =~ ^v1\.([0-9]+)(\.|$) ]] || continue
-	x="${BASH_REMATCH[1]}"
-	((x > latest)) && latest=$x
+	m=
+	if [[ "$t" =~ ^v1\.([0-9]+)\.([0-9]+)$ ]]; then
+		m="${BASH_REMATCH[1]}"
+	elif [[ "$t" =~ ^v1\.([0-9]+)$ ]]; then
+		m="${BASH_REMATCH[1]}"
+	else
+		continue
+	fi
+	((m > max_minor)) && max_minor=$m
 done
 
-next=$((latest + 1))
-newtag="v1.$next"
+if ((max_minor < 0)); then
+	max_minor=0
+fi
 
-printf 'git tag %s  (max v1.X seen: v1.%s)\n' "$newtag" "$latest"
+next=$((max_minor + 1))
+newtag="v1.${next}.0"
+
+printf 'git tag %s  (largest v1.<minor>.* seen: v1.%s.*)\n' "$newtag" "$max_minor"
 git tag "$newtag"
 
 printf 'git push --tags\n'
@@ -28,5 +43,4 @@ git push --tags
 
 module=$(go list -m -f '{{.Path}}')
 printf 'go list -m (warm GOPROXY) %s@%s\n' "$module" "$newtag"
-# Resolve this version through the public proxy so it fetches the new tag from VCS.
 GOPROXY=https://proxy.golang.org,direct go list -m "${module}@${newtag}"
