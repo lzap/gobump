@@ -24,7 +24,7 @@ var (
 )
 
 func color(input string, color ...string) string {
-	if term.IsTerminal(int(os.Stdout.Fd())) {
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return input
 	}
 

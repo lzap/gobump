@@ -51,10 +51,6 @@ func gitRun(args ...string) error {
 	c.Env = os.Environ()
 	if config.Verbose {
 		c.Stdout = out
-		c.Stderr = out
-	} else {
-		c.Stdout = nil
-		c.Stderr = nil
 	}
 	c.Stderr = out
 	return c.Run()

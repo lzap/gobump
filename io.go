@@ -8,12 +8,10 @@ import (
 )
 
 const (
-	_         = iota
-	_         = iota
-	ERR_READ  = iota
-	ERR_WRITE = iota
-	ERR_PARSE = iota
-	ERR_CMD   = iota
+	ERR_READ  = 2
+	ERR_WRITE = 3
+	ERR_PARSE = 4
+	ERR_CMD   = 5
 )
 
 func cmd(cmd string, args ...string) error {
@@ -24,10 +22,6 @@ func cmd(cmd string, args ...string) error {
 	c.Env = os.Environ()
 	if config.Verbose {
 		c.Stdout = out
-		c.Stderr = out
-	} else {
-		c.Stdout = nil
-		c.Stderr = nil
 	}
 	c.Stderr = out
 	if err := c.Run(); err != nil {
