@@ -78,7 +78,7 @@ func (out *OutputMarkdown) endBuffer(render bool) {
 	}
 
 	if render && buf.Len() > out.wInitial {
-		fmt.Fprintf(out.w, "%s\n\n```\n\n</details>\n", buf.String())
+		fmt.Fprintf(out.Destination, "%s```\n</details>\n", buf.String())
 	}
 
 	out.w = out.Destination
