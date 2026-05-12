@@ -162,7 +162,7 @@ func process(original *modfile.File) []Result {
 		if perDepGit {
 			if !upgradeSuccess {
 				if err := gitResetHardHEAD(); err != nil {
-					out.Error("git reset --hard HEAD failed:", err.Error())
+					out.Error("git reset/clean failed:", err.Error())
 				}
 			} else if versionAfter != r.Mod.Version && gitWorktreeDiffersFromHEAD() {
 				if err := gitCommitDependencyBump(r.Mod.Path, versionAfter); err != nil {

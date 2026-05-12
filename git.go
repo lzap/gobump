@@ -81,7 +81,13 @@ func gitWorktreeDiffersFromHEAD() bool {
 }
 
 func gitResetHardHEAD() error {
-	return gitRun("reset", "--hard", "HEAD")
+	if err := gitRun("reset", "--hard", "HEAD"); err != nil {
+		return fmt.Errorf("git reset --hard HEAD: %w", err)
+	}
+	if err := gitRun("clean", "-fdq"); err != nil {
+		return fmt.Errorf("git clean -fdq: %w", err)
+	}
+	return nil
 }
 
 func gitCommitDependencyBump(modulePath, version string) error {

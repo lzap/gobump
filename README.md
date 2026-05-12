@@ -74,7 +74,7 @@ This repository’s `go.mod` targets a recent Go release; use a `gobump` binary 
   -retries int
     	number of downgrade retries for each module (default: 5) (default 5)
   -single-commit
-    	if true, skip per-dependency git commits and git reset on failure (default: false)
+    	if true, skip per-dependency git commits and reset/clean on failure (default: false)
   -src-go-mod string
     	path to go.mod source file (default: go.mod) (default "go.mod")
   -verbose

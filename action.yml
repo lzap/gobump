@@ -58,7 +58,7 @@ inputs:
     required: false
     default: "chore: bump dependencies via gobump"
   single_commit:
-    description: "If true, skip per-dependency git commits and git reset on failure. When false (default), each successful bump is committed as chore(deps): update … when running in a git work tree with no staged changes."
+    description: "If true, skip per-dependency git commits and reset/clean on failure. When false (default), each successful bump is committed as chore(deps): update … when running in a git work tree with no staged changes."
     required: false
     default: "false"
 
