@@ -1,18 +1,26 @@
-.PHONY: all install tidy release
+# Match the `go` directive in go.mod (used to avoid accidental toolchain / module bumps).
+GOTOOLCHAIN ?= go$(shell awk '/^go /{print $$2}' go.mod)
 
-all: fmt tidy install
+.PHONY: all fmt install tidy bump test release
+
+all: fmt install
 
 fmt:
 	go fmt ./...
 
 install:
-	go install ./...
+	GOTOOLCHAIN=$(GOTOOLCHAIN) go install ./...
 
+test:
+	GOTOOLCHAIN=$(GOTOOLCHAIN) go test ./...
+
+# Intentional dependency maintenance only — not part of `make all`.
 tidy:
-	go mod tidy
+	GOTOOLCHAIN=$(GOTOOLCHAIN) go mod tidy
 
+# Bumps dependencies in the **current directory**; do not use on this repo when developing gobump.
 bump:
-	go run .
+	GOTOOLCHAIN=$(GOTOOLCHAIN) go run .
 
 # Tag next v1.<minor>.0, push, warm proxy (see scripts/release.sh).
 release:

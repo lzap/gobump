@@ -150,6 +150,7 @@ func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 // formatModuleChangelog returns a changelog section for one module bump.
 func formatModuleChangelog(modulePath, versionBefore, versionAfter string) string {
 	var sb strings.Builder
+	sb.WriteString("\n\nCHANGELOG:\n")
 	changelog, err := getChangelog(modulePath, versionBefore, versionAfter)
 	if err != nil {
 		fmt.Fprintf(&sb, "Failed to get changelog: %s\n", err.Error())

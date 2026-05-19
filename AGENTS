@@ -1,8 +1,61 @@
-When testing the app, do not bump the Go version in the go.mod in this project.
-If a dependency needs to be added or updated, use
+# AGENTS
 
-    GOTOOLCHAIN=go1.XX.YY go run .
+## Do not change `go.mod` or `go.sum` unless necessary
 
-to keep the pinned Go version.
+Treat the module manifest as pinned. Do **not** edit `go.mod` or `go.sum` when building, testing, formatting, or demonstrating gobump—unless you are **intentionally** adding a new dependency or upgrading one as part of the task.
 
-See README.md for more details.
+That includes:
+
+- The `go` toolchain line (must stay aligned with the pinned release; see the `go` directive in `go.mod`)
+- Existing `require` versions and indirect entries
+
+## Commands that must not be run on this repo root (without care)
+
+| Command | Risk |
+|---------|------|
+| `go run .` / `make bump` | Bumps dependencies and may raise the `go` version |
+| `go run . -no-git -changelog` | Same as above (still runs real `go get`) |
+| `go mod tidy` / `make tidy` | Rewrites `go.mod` / `go.sum` |
+| `go get` / `go get -u` | Changes versions and possibly `go` |
+| `make` / `make all` | Does **not** run tidy; safe for fmt + install only |
+
+## Safe workflow
+
+Read the `go` line from `go.mod` (e.g. `go 1.24.12`) and pin the toolchain for every Go invocation in this tree:
+
+```bash
+export GOTOOLCHAIN=go1.24.12   # match go.mod
+
+go test ./...
+go build ./...
+go fmt ./...
+```
+
+Exercise gobump against **testdata** only, never the project module:
+
+```bash
+GOTOOLCHAIN=go1.24.12 go run . -dry-run \
+  -src-go-mod testdata/go-mod-middleware.in \
+  -dst-go-mod /tmp/gobump-test.out \
+  -format none
+```
+
+Changelog or integration checks that need the network should use unit tests (e.g. `TestGetChangelogGolangOrgModule`) or a **copy** of `go.mod` in `/tmp`, not this repository’s files.
+
+## When changing `go.mod` / `go.sum` is allowed
+
+- Adding a dependency the project actually needs
+- Deliberately upgrading a library (explain in the commit)
+- Intentionally bumping the pinned Go release (keep `.github/workflows/weekly-bump.yml` `go_version` in sync)
+
+Use `GOTOOLCHAIN=go1.XX.YY` matching the `go` directive when running `go get` or `go run .` for those changes.
+
+## Accidental edits
+
+Restore from git:
+
+```bash
+git restore go.mod go.sum
+```
+
+See `README.md` for product behaviour; this file is only for working on the gobump source tree.

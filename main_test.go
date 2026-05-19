@@ -34,13 +34,9 @@ func TestMain(t *testing.T) {
 		})
 	}
 
-	// Clean up the project go.mod as indirect dependencies will be added
+	// Tests use -dry-run against testdata paths; restore repo manifests if anything touched them.
 	defer func() {
-		t.Log("Cleaning up go.mod")
-		err := exec.Command("go", "mod", "tidy").Run()
-		if err != nil {
-			t.Fatalf("failed to tidy go.mod: %v", err)
-		}
+		_ = exec.Command("git", "restore", "go.mod", "go.sum").Run()
 	}()
 
 	files, err := filepath.Glob("testdata/*.in")
