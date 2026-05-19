@@ -121,12 +121,14 @@ func (out *OutputMarkdown) Fatal(msg string, code ...int) {
 	os.Exit(code[0])
 }
 
+func markdownTableRow(cells ...string) string {
+	return "| " + strings.Join(cells, " | ") + " |"
+}
+
 func (out *OutputMarkdown) PrintSummary(results []Result) {
 	fmt.Fprintf(out.w, "\n## Summary\n\n")
 	fmt.Fprintln(out.w, "| Module | Status | Version |")
 	fmt.Fprintln(out.w, "| --- | --- | --- |")
-	fmt.Fprintln(out.w, "")
-	fmt.Fprintln(out.w, "Status: **U** updated, **E** error, **X** excluded, **N** no newer versions on module proxy, **-** unchanged.")
 
 	for _, r := range results {
 		action := "E"
@@ -141,10 +143,13 @@ func (out *OutputMarkdown) PrintSummary(results []Result) {
 				action = "U"
 			}
 		}
-		out.Println(strings.Join([]string{
+		fmt.Fprintln(out.w, markdownTableRow(
 			r.ModulePath,
 			action,
-			strOrDash(r.VersionBefore) + " > " + strOrDash(r.VersionAfter),
-		}, "|"))
+			strOrDash(r.VersionBefore)+" > "+strOrDash(r.VersionAfter),
+		))
 	}
+
+	fmt.Fprintln(out.w, "")
+	fmt.Fprintln(out.w, "Status: **U** updated, **E** error, **X** excluded, **N** no newer versions on module proxy, **-** unchanged.")
 }
