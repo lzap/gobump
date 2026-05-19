@@ -54,7 +54,7 @@ func main() {
 	results := process(original)
 
 	out.PrintSummary(results)
-	if config.Changelog {
+	if config.Changelog && !perDependencyGitEnabled() {
 		PrintChangelogs(results)
 	}
 	if config.FailOnError && resultsHaveErrors(results) {

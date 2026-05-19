@@ -118,7 +118,7 @@ func goModTidy() error {
 	return nil
 }
 
-func gitCommitDependencyBump(modulePath, version string) error {
+func gitCommitDependencyBump(modulePath, versionBefore, versionAfter string) error {
 	if err := gitEnsureUserIdentity(); err != nil {
 		return err
 	}
@@ -159,7 +159,10 @@ func gitCommitDependencyBump(modulePath, version string) error {
 	if err := gitRun(addArgs...); err != nil {
 		return fmt.Errorf("git add: %w", err)
 	}
-	msg := fmt.Sprintf("chore(deps): update %s to %s", modulePath, version)
+	msg := fmt.Sprintf("chore(deps): update %s to %s", modulePath, versionAfter)
+	if config.Changelog {
+		msg += formatModuleChangelog(modulePath, versionBefore, versionAfter)
+	}
 	if err := gitRun("commit", "-m", msg); err != nil {
 		return fmt.Errorf("git commit: %w", err)
 	}

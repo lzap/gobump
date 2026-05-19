@@ -94,6 +94,22 @@ func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 	return changelog.String(), nil
 }
 
+// formatModuleChangelog returns a changelog section for one module bump.
+func formatModuleChangelog(modulePath, versionBefore, versionAfter string) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("\n\nModule: %s\n", modulePath))
+	sb.WriteString(fmt.Sprintf("Updated from %s to %s\n", versionBefore, versionAfter))
+	changelog, err := getChangelog(modulePath, versionBefore, versionAfter)
+	if err != nil {
+		sb.WriteString(fmt.Sprintf("Failed to get changelog: %s\n", err.Error()))
+	} else if changelog == "" {
+		sb.WriteString("No commits found between versions.\n")
+	} else {
+		sb.WriteString(changelog)
+	}
+	return sb.String()
+}
+
 // createGist creates a new GitHub Gist with the provided content.
 func createGist(token, description, content string) (string, error) {
 	gistRequest := GistRequest{
@@ -174,16 +190,7 @@ func PrintChangelogs(results []Result) {
 		sb := strings.Builder{}
 		for _, result := range results {
 			if result.Success && result.VersionBefore != result.VersionAfter {
-				sb.WriteString(fmt.Sprintf("\nModule: %s\n", result.ModulePath))
-				sb.WriteString(fmt.Sprintf("Updated from %s to %s\n", result.VersionBefore, result.VersionAfter))
-				changelog, err := getChangelog(result.ModulePath, result.VersionBefore, result.VersionAfter)
-				if err != nil {
-					sb.WriteString(fmt.Sprintf("Failed to get changelog: %s\n", err.Error()))
-				} else if changelog == "" {
-					sb.WriteString("No commits found between versions.\n")
-				} else {
-					sb.WriteString(changelog)
-				}
+				sb.WriteString(formatModuleChangelog(result.ModulePath, result.VersionBefore, result.VersionAfter))
 			}
 		}
 

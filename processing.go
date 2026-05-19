@@ -165,7 +165,7 @@ func process(original *modfile.File) []Result {
 					out.Error("git reset/clean failed:", err.Error())
 				}
 			} else if versionAfter != r.Mod.Version && gitWorktreeDiffersFromHEAD() {
-				if err := gitCommitDependencyBump(r.Mod.Path, versionAfter); err != nil {
+				if err := gitCommitDependencyBump(r.Mod.Path, r.Mod.Version, versionAfter); err != nil {
 					out.Error("git commit failed:", err.Error())
 				}
 			}

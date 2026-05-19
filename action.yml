@@ -44,7 +44,7 @@ inputs:
     required: false
     default: "false"
   changelog:
-    description: "Add changelog of all updated modules to commit message"
+    description: "Fetch upstream git changelogs for updated modules. With per-dependency commits (default), each bump commit includes its module changelog; with -no-git, changelogs are written to changelog-dest for the PR message instead"
     required: false
     default: "false"
   include:

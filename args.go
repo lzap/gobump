@@ -87,7 +87,7 @@ func InitConfig() {
 	flag.StringVar(&config.GoModSrc, "src-go-mod", "go.mod", "path to go.mod source file (default: go.mod)")
 	flag.StringVar(&config.GoModDst, "dst-go-mod", "go.mod", "path to go.mod destination file (default: go.mod)")
 	flag.IntVar(&config.Retries, "retries", 5, "number of downgrade retries for each module (default: 5)")
-	flag.BoolVar(&config.Changelog, "changelog", false, "print git changelog of all updated modules")
+	flag.BoolVar(&config.Changelog, "changelog", false, "include upstream git changelog per updated module (in each per-dependency commit when git integration is enabled, otherwise printed or written at the end)")
 	flag.StringVar(&config.ChangelogDest, "changelog-dest", "stdout", "Destination of the changelog (\"stdout\", \"gist\" or a filename)")
 	flag.BoolVar(&config.NoGit, "no-git", false, "if true, skip all git operations (no per-dependency commits or reset/clean on failure)")
 	flag.StringVar(&config.GitUserName, "user-name", "Schutzbot", "git user.name for per-dependency commits (local repo config)")
