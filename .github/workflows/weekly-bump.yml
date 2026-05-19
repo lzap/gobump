@@ -14,7 +14,6 @@ jobs:
       - name: Run gobump-deps action
         uses: ./
         with:
-          go_version: "1.24.0" # keep in sync with go.mod
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go test ./..."
           labels: "fedora"
