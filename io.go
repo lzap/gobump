@@ -15,16 +15,27 @@ const (
 	ERR_GIT   = 6
 )
 
-func cmd(cmd string, args ...string) error {
-	if config.Verbose {
-		out.Println(cmd, strings.Join(args, " "))
+// cmd runs a subprocess; when verbose, echoes the command and streams stdout/stderr to out
+// (intended for go get and -exec inside a preformatted block).
+func cmd(name string, args ...string) error {
+	return runCmd(name, args, true)
+}
+
+// cmdQuiet runs a subprocess without writing to out (e.g. go mod tidy before git commit).
+func cmdQuiet(name string, args ...string) error {
+	return runCmd(name, args, false)
+}
+
+func runCmd(name string, args []string, logOutput bool) error {
+	if logOutput && config.Verbose {
+		out.Println(name, strings.Join(args, " "))
 	}
-	c := exec.Command(cmd, args...)
+	c := exec.Command(name, args...)
 	c.Env = os.Environ()
-	if config.Verbose {
+	if logOutput && config.Verbose {
 		c.Stdout = out
+		c.Stderr = out
 	}
-	c.Stderr = out
 	if err := c.Run(); err != nil {
 		return err
 	}

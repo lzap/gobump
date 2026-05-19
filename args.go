@@ -80,7 +80,7 @@ func InitConfig() {
 	var exclude commaSeparatedStringSlice
 	flag.BoolVar(&config.Version, "version", false, "print Go binary debug info")
 	flag.BoolVar(&config.DryRun, "dry-run", false, "revert to original go.mod after running")
-	flag.BoolVar(&config.Verbose, "verbose", defaultVerbose, "print more information including stderr of executed commands")
+	flag.BoolVar(&config.Verbose, "verbose", defaultVerbose, "echo go get and -exec command output (markdown: inside detail blocks); does not log git operations in git mode")
 	flag.Var(&commands, "exec", "exec command for each individual bump, can be used multiple times")
 	flag.Var(&exclude, "exclude", "comma-separated list of modules to exclude from update")
 	flag.StringVar(&config.Format, "format", defaultFormat, "output format (console, markdown, none)")

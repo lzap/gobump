@@ -55,15 +55,8 @@ func gitInsideWorkTree() bool {
 }
 
 func gitRun(args ...string) error {
-	if config.Verbose {
-		out.Println(append([]string{"git"}, args...)...)
-	}
 	c := exec.Command("git", args...)
 	c.Env = os.Environ()
-	if config.Verbose {
-		c.Stdout = out
-	}
-	c.Stderr = out
 	return c.Run()
 }
 
@@ -112,7 +105,7 @@ func gitEnsureUserIdentity() error {
 }
 
 func goModTidy() error {
-	if err := cmd(config.GoBinary, "mod", "tidy"); err != nil {
+	if err := cmdQuiet(config.GoBinary, "mod", "tidy"); err != nil {
 		return fmt.Errorf("go mod tidy: %w", err)
 	}
 	return nil
