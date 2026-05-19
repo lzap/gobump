@@ -111,8 +111,18 @@ func gitEnsureUserIdentity() error {
 	return nil
 }
 
+func goModTidy() error {
+	if err := cmd(config.GoBinary, "mod", "tidy"); err != nil {
+		return fmt.Errorf("go mod tidy: %w", err)
+	}
+	return nil
+}
+
 func gitCommitDependencyBump(modulePath, version string) error {
 	if err := gitEnsureUserIdentity(); err != nil {
+		return err
+	}
+	if err := goModTidy(); err != nil {
 		return err
 	}
 	paths := goModSumPathsForGit()
