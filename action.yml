@@ -25,16 +25,18 @@ inputs:
     description: "Comma-separated list of labels to add to the PR"
     required: false
   tidy:
-    description: "Run go mod tidy after bumping dependencies (default: true)"
+    description: "Deprecated, ignored. gobump runs go mod tidy before each per-dependency commit (git mode) or leaves go.mod/go.sum as updated (no-git mode)."
     required: false
     default: "true"
+    deprecationMessage: "tidy is deprecated and has no effect; remove it from your workflow."
+  exec_pr:
+    description: "Deprecated, ignored. Previously ran a command before the PR step and appended output to the commit message."
+    required: false
+    deprecationMessage: "exec_pr is deprecated and has no effect; remove it from your workflow."
   setup_go:
     description: "Set up Go environment (default: true)"
     required: false
     default: "true"
-  exec_pr:
-    description: "Bash snippet run before the PR step; always succeeds. Combined stdout/stderr and exit code are appended to the commit message."
-    required: false
   pr:
     description: "Create a pull request with the changes"
     required: false
@@ -116,51 +118,27 @@ runs:
         go env
         go run . -no-git=${{ inputs.no_git }} -user-name="${{ inputs.user_name }}" -user-email="${{ inputs.user_email }}" -exec "${{ inputs.exec }}" -exec "${{ inputs.exec2 }}" -changelog=${{ inputs.changelog }} -changelog-dest="/tmp/changelog.txt" -exclude "${{ inputs.exclude }}" ${{ inputs.include }} | tee /tmp/bump.log
 
-    - name: Run go mod tidy
-      if: ${{ inputs.tidy == 'true' }}
+    - name: Deprecation warnings
+      if: ${{ inputs.tidy != 'true' || inputs.exec_pr != '' }}
       shell: bash
-      env:
-        GOTOOLCHAIN: local
-        CGO_ENABLED: ${{ inputs.cgo_enabled }}
       run: |
-        go mod tidy
-
-    - name: Execute command before PR
-      env:
-        GOTOOLCHAIN: local
-        CGO_ENABLED: ${{ inputs.cgo_enabled }}
-      shell: bash
-      if: ${{ inputs.exec_pr != '' }}
-      run: |
-        set +e
-        (
-        ${{ inputs.exec_pr }}
-        ) > /tmp/exec_pr.log 2>&1
-        pr_ec=$?
-        echo "$pr_ec" > /tmp/exec_pr.exit
+        if [[ "${{ inputs.tidy }}" != "true" ]]; then
+          echo "::warning title=Deprecated input tidy::tidy is ignored (gobump handles go mod tidy). Remove tidy from your workflow."
+        fi
+        if [[ -n "${{ inputs.exec_pr }}" ]]; then
+          echo "::warning title=Deprecated input exec_pr::exec_pr is ignored. Remove exec_pr from your workflow."
+        fi
 
     - name: Prepare commit message
       id: prep_commit_msg
       shell: bash
       run: |
-        multiline=false
-        [[ -f /tmp/changelog.txt ]] && multiline=true
-        [[ -f /tmp/exec_pr.exit ]] && multiline=true
-
-        if [[ "$multiline" == true ]]; then
+        if [[ -f /tmp/changelog.txt ]]; then
           {
             echo "commit_message<<COMMIT_MSG_EOF"
             echo "${{ inputs.commit_message }}"
-            if [[ -f /tmp/changelog.txt ]]; then
-              echo ""
-              cat /tmp/changelog.txt
-            fi
-            if [[ -f /tmp/exec_pr.exit ]]; then
-              echo ""
-              echo "---"
-              echo "exec_pr (exit $(cat /tmp/exec_pr.exit)):"
-              cat /tmp/exec_pr.log
-            fi
+            echo ""
+            cat /tmp/changelog.txt
             echo "COMMIT_MSG_EOF"
           } >> "$GITHUB_OUTPUT"
         else

@@ -21,7 +21,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go build -buildvcs=false ."
           exec2: "go test -buildvcs=false ."
-          exec_pr: "ls -lah1"
           pr: false
           development: true
 
@@ -37,7 +36,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           include: "github.com/google/go-cmp"
           exec: "go build -buildvcs=false ."
-          exec_pr: "ls -lah1"
           pr: false
           development: true
           
@@ -57,6 +55,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           exec: "go build -buildvcs=false ."
           exec2: "go test -buildvcs=false ."
-          exec_pr: "ls -lah1"
           pr: false
           development: true

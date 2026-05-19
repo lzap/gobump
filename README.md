@@ -134,7 +134,7 @@ Summary legend:
 
 ## GitHub Action
 
-The GitHub Action executes `gobump`, then performs `go mod tidy` and files an update PR to the project. Example PR: https://github.com/lzap/gobump/pull/7
+The GitHub Action executes `gobump` and opens an update PR. Example PR: https://github.com/lzap/gobump/pull/7
 
 Example action:
 
@@ -166,8 +166,8 @@ Action inputs:
 * `exec`: An optional command to execute for each dependency update.
 * `exec2`: A second optional command to execute for each dependency update.
 * `exclude`: A comma-separated list of modules to exclude from the update.
-* `tidy`: Set to `false` to avoid executing `go mod tidy` after `gobump`.
-* `exec_pr`: An optional command to execute before a PR is made.
+* `tidy` *(deprecated, ignored)*: Kept for backward compatibility. gobump runs `go mod tidy` before each per-dependency commit in git mode.
+* `exec_pr` *(deprecated, ignored)*: Kept for backward compatibility. No longer runs a command before the PR step.
 * `pr`: Set to `false` to avoid the creation of a PR.
 * `token`: The GitHub token (used for pull requests and, when changelog is enabled with `gist` output, for creating the Gist; the tool reads `GITHUB_TOKEN` or `GH_TOKEN`).
 * `labels`: Comma-separated GitHub PR labels.
