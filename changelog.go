@@ -150,11 +150,9 @@ func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
 // formatModuleChangelog returns a changelog section for one module bump.
 func formatModuleChangelog(modulePath, versionBefore, versionAfter string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\n\nModule: %s\n", modulePath))
-	sb.WriteString(fmt.Sprintf("Updated from %s to %s\n", versionBefore, versionAfter))
 	changelog, err := getChangelog(modulePath, versionBefore, versionAfter)
 	if err != nil {
-		sb.WriteString(fmt.Sprintf("Failed to get changelog: %s\n", err.Error()))
+		fmt.Fprintf(&sb, "Failed to get changelog: %s\n", err.Error())
 	} else if changelog == "" {
 		sb.WriteString("No commits found between versions.\n")
 	} else {

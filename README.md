@@ -54,9 +54,9 @@ This repository’s `go.mod` targets a recent Go release; use a `gobump` binary 
 
 ```
   -changelog
-    	print git changelog of all updated modules
+    	fetch upstream git changelog for each updated module (embedded in per-dependency commit messages when git integration is enabled; otherwise aggregated at end per -changelog-dest)
   -changelog-dest string
-    	Destination of the changelog ("stdout", "gist" or a filename) (default "stdout")
+    	with -changelog and -no-git (or no usable git work tree): write aggregated changelogs to stdout (default), a file path, or "gist"; ignored when changelogs are committed per dependency (default "stdout")
   -dry-run
     	revert to original go.mod after running
   -dst-go-mod string
@@ -87,7 +87,13 @@ This repository’s `go.mod` targets a recent Go release; use a `gobump` binary 
     	print Go binary debug info
 ```
 
-With `-changelog-dest gist`, the tool creates a private GitHub Gist using `GITHUB_TOKEN` or `GH_TOKEN` from the environment (never pass a token on the command line).
+With `-changelog`, upstream commits between the old and new module versions are fetched (via the module proxy and GitHub). By default, each successful bump commit includes that module’s changelog in the message body. Use `-no-git` if you prefer a single aggregated changelog at the end instead.
+
+`-changelog-dest` only applies together with `-changelog` when per-dependency git commits are **not** used (`-no-git`, `-dry-run`, or no clean git work tree):
+
+* `stdout` (default) — print the aggregated changelogs after the summary
+* a file path — write the aggregated changelogs to that file (the GitHub Action uses `/tmp/changelog.txt` this way when `no_git` is true)
+* `gist` — create one private GitHub Gist with all changelogs; the URL is printed (requires `GITHUB_TOKEN` or `GH_TOKEN`; never pass a token on the command line)
 
 The utility can also take one or more module paths as positional arguments. When provided, only those dependencies will be updated, ignoring others. This is useful for targeting specific dependency updates.
 
@@ -176,7 +182,7 @@ Tip: When building or testing in a container, use `-buildvcs=false` to avoid `gi
 * For each direct dependency, it asks the configured module proxy for `@v/list`, then runs `go get MODULE@V` for up to `-retries` newer versions (newest first). This is not the same as `go get MODULE@latest` in one shot, but it walks backward through recent releases when an upgrade fails.
 * If the `go get` command fails (for example when `GOTOOLCHAIN` is pinned) or modifies the Go version in `go.mod`, it reverts to the last version of `go.mod` and tries again with the next lower version until it succeeds or runs out of attempts.
 * In a git repository, unless `-no-git` or `-dry-run` is set, gobump exits before doing any work if there are uncommitted changes (`git status --porcelain` is non-empty), so local edits are not mixed with automatic commits or `git reset`/`git clean` on failed bumps. Use `-no-git` when you intentionally want only `go.mod` / `go.sum` updates with no git integration.
-* When per-dependency git commits are enabled, each successful bump runs `go mod tidy`, then commits `go.mod` and `go.sum` as `chore(deps): update MODULE to VERSION`. With `-changelog`, the upstream git changelog for that module is appended to the commit message body.
+* When per-dependency git commits are enabled, each successful bump runs `go mod tidy`, then commits `go.mod` and `go.sum` as `chore(deps): update MODULE to VERSION`. With `-changelog`, the upstream git changelog for that module is appended to the commit message body (`-changelog-dest` is not used in this mode).
 * If and only if a module succeeds in updating to a newer version and one or more optional `exec` arguments are passed, it executes them for that candidate. If the proxy had no newer versions, `exec` is skipped for that module. If any `exec` fails, it reverts to the last good `go.mod` and tries the next older candidate version, up to the retry limit. The same applies when `go get` fails or the Go directive would change.
 * Repeats for every other direct dependency.
 
