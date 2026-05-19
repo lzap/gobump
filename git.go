@@ -101,7 +101,20 @@ func gitResetHardHEAD() error {
 	return nil
 }
 
+func gitEnsureUserIdentity() error {
+	if err := gitRun("config", "user.name", config.GitUserName); err != nil {
+		return fmt.Errorf("git config user.name: %w", err)
+	}
+	if err := gitRun("config", "user.email", config.GitUserEmail); err != nil {
+		return fmt.Errorf("git config user.email: %w", err)
+	}
+	return nil
+}
+
 func gitCommitDependencyBump(modulePath, version string) error {
+	if err := gitEnsureUserIdentity(); err != nil {
+		return err
+	}
 	paths := goModSumPathsForGit()
 	for _, p := range paths {
 		if _, err := os.Stat(p); err != nil {

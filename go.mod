@@ -1,6 +1,6 @@
 module github.com/lzap/gobump
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -8,4 +8,4 @@ require (
 	golang.org/x/term v0.40.0
 )
 
-require golang.org/x/sys v0.41.0 // indirect
+require golang.org/x/sys v0.44.0 // indirect

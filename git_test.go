@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -76,6 +77,44 @@ func TestPerDependencyGitEnabled(t *testing.T) {
 	config.DryRun = true
 	if perDependencyGitEnabled() {
 		t.Fatal("expected false when DryRun is true")
+	}
+}
+
+func TestGitEnsureUserIdentity(t *testing.T) {
+	tmp := t.TempDir()
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(oldWd) })
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "init").Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	config = &AppConfig{
+		GitUserName:  "Schutzbot",
+		GitUserEmail: "schutzbot@gmail.com",
+	}
+	if err := gitEnsureUserIdentity(); err != nil {
+		t.Fatal(err)
+	}
+
+	name, err := exec.Command("git", "config", "user.name").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(string(name)); got != "Schutzbot" {
+		t.Fatalf("user.name = %q, want Schutzbot", got)
+	}
+	email, err := exec.Command("git", "config", "user.email").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(string(email)); got != "schutzbot@gmail.com" {
+		t.Fatalf("user.email = %q, want schutzbot@gmail.com", got)
 	}
 }
 

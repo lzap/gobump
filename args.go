@@ -47,6 +47,8 @@ type AppConfig struct {
 	Dependencies  []string
 	Exclude       commaSeparatedStringSlice
 	NoGit         bool
+	GitUserName   string
+	GitUserEmail  string
 	ModuleProxy   string
 	FailOnError   bool
 }
@@ -88,6 +90,8 @@ func InitConfig() {
 	flag.BoolVar(&config.Changelog, "changelog", false, "print git changelog of all updated modules")
 	flag.StringVar(&config.ChangelogDest, "changelog-dest", "stdout", "Destination of the changelog (\"stdout\", \"gist\" or a filename)")
 	flag.BoolVar(&config.NoGit, "no-git", false, "if true, skip all git operations (no per-dependency commits or reset/clean on failure)")
+	flag.StringVar(&config.GitUserName, "user-name", "Schutzbot", "git user.name for per-dependency commits (local repo config)")
+	flag.StringVar(&config.GitUserEmail, "user-email", "schutzbot@gmail.com", "git user.email for per-dependency commits (local repo config)")
 	flag.StringVar(&config.ModuleProxy, "proxy", "", "module proxy base URL (default: first usable $GOPROXY entry, else https://proxy.golang.org)")
 	flag.BoolVar(&config.FailOnError, "fail-on-error", false, "exit with status 1 if any non-excluded module failed to update")
 	flag.Parse()

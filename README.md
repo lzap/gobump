@@ -75,6 +75,10 @@ This repository’s `go.mod` targets a recent Go release; use a `gobump` binary 
     	number of downgrade retries for each module (default: 5) (default 5)
   -no-git
     	if true, skip all git operations (no per-dependency commits or reset/clean on failure)
+  -user-email string
+    	git user.email for per-dependency commits (local repo config) (default "schutzbot@gmail.com")
+  -user-name string
+    	git user.name for per-dependency commits (local repo config) (default "Schutzbot")
   -src-go-mod string
     	path to go.mod source file (default: go.mod) (default "go.mod")
   -verbose
@@ -162,6 +166,7 @@ Action inputs:
 * `token`: The GitHub token (used for pull requests and, when changelog is enabled with `gist` output, for creating the Gist; the tool reads `GITHUB_TOKEN` or `GH_TOKEN`).
 * `labels`: Comma-separated GitHub PR labels.
 * `no_git`: When `true`, passes `-no-git` so gobump does not run any git commands (per-dependency commits or reset/clean).
+* `user_name` / `user_email`: Git author identity for per-dependency commits (defaults: `Schutzbot` / `schutzbot@gmail.com`). CI runners often have no global `user.name` / `user.email`; gobump sets these in the local repository before each commit.
 
 Tip: When building or testing in a container, use `-buildvcs=false` to avoid `git: detected dubious ownership in repository` permissions errors. Alternatively, set the `git config --system --add safe.directory /path` config option.
 
