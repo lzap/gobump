@@ -5,16 +5,41 @@ import (
 	"testing"
 )
 
-func TestFormatModuleChangelogNonGitHub(t *testing.T) {
-	got := formatModuleChangelog("golang.org/x/mod", "v0.22.0", "v0.24.0")
-	if !strings.Contains(got, "golang.org/x/mod") {
-		t.Fatalf("missing module path: %q", got)
+func TestGithubRepoFromOriginURL(t *testing.T) {
+	tests := []struct {
+		url       string
+		wantOwner string
+		wantRepo  string
+		wantOK    bool
+	}{
+		{"https://github.com/google/go-cmp", "google", "go-cmp", true},
+		{"https://github.com/google/go-cmp/", "google", "go-cmp", true},
+		{"https://go.googlesource.com/mod", "golang", "mod", true},
+		{"https://example.com/foo", "", "", false},
 	}
-	if !strings.Contains(got, "v0.22.0") || !strings.Contains(got, "v0.24.0") {
-		t.Fatalf("missing versions: %q", got)
+	for _, tt := range tests {
+		owner, repo, ok := githubRepoFromOriginURL(tt.url)
+		if ok != tt.wantOK || owner != tt.wantOwner || repo != tt.wantRepo {
+			t.Errorf("githubRepoFromOriginURL(%q) = (%q, %q, %v), want (%q, %q, %v)",
+				tt.url, owner, repo, ok, tt.wantOwner, tt.wantRepo, tt.wantOK)
+		}
 	}
-	if !strings.Contains(got, "No commits found between versions") {
-		t.Fatalf("expected no commits message for non-GitHub module: %q", got)
+}
+
+func TestGetChangelogGolangOrgModule(t *testing.T) {
+	if testing.Short() {
+		t.Skip("network")
+	}
+	config = &AppConfig{}
+	changelog, err := getChangelog("golang.org/x/mod", "v0.30.0", "v0.33.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changelog == "" {
+		t.Fatal("expected non-empty changelog for golang.org/x/mod")
+	}
+	if !strings.Contains(changelog, "* ") {
+		t.Fatalf("expected bullet commits: %q", changelog)
 	}
 }
 

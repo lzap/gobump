@@ -1,5 +1,8 @@
 When testing the app, do not bump the Go version in the go.mod in this project.
-If a dependency needs to be added or updated, use "go run ." to keep the pinned
-Go version.
+If a dependency needs to be added or updated, use
+
+    GOTOOLCHAIN=go1.XX.YY go run .
+
+to keep the pinned Go version.
 
 See README.md for more details.

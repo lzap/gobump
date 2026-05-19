@@ -9,7 +9,6 @@ install:
 	go install ./...
 
 tidy:
-	go run .
 	go mod tidy
 
 bump:

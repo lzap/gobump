@@ -50,48 +50,101 @@ func shortCommitSHA(sha string) string {
 	return sha[:7]
 }
 
-// getChangelog fetches the changelog for a module from GitHub.
-func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
-	parts := strings.Split(modulePath, "/")
-	if len(parts) < 3 || parts[0] != "github.com" {
-		return "", nil
+// githubRepoFromOriginURL maps a module VCS origin URL to a GitHub owner/repo for compare API calls.
+func githubRepoFromOriginURL(originURL string) (owner, repo string, ok bool) {
+	originURL = strings.TrimSuffix(strings.TrimSpace(originURL), "/")
+	switch {
+	case strings.HasPrefix(originURL, "https://github.com/"):
+		rest := strings.TrimPrefix(originURL, "https://github.com/")
+		parts := strings.SplitN(rest, "/", 2)
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			return parts[0], parts[1], true
+		}
+	case strings.HasPrefix(originURL, "http://github.com/"):
+		rest := strings.TrimPrefix(originURL, "http://github.com/")
+		parts := strings.SplitN(rest, "/", 2)
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			return parts[0], parts[1], true
+		}
+	case strings.HasPrefix(originURL, "https://go.googlesource.com/"):
+		name := strings.TrimPrefix(originURL, "https://go.googlesource.com/")
+		if name != "" && !strings.Contains(name, "/") {
+			return "golang", name, true
+		}
 	}
-	owner := parts[1]
-	repo := parts[2]
+	return "", "", false
+}
 
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/compare/%s...%s", owner, repo, fromVersion, toVersion)
+func formatGitHubCompareCommits(commits []GitHubCommit) string {
+	var changelog strings.Builder
+	for _, commit := range commits {
+		firstLine := strings.Split(commit.Commit.Message, "\n")[0]
+		changelog.WriteString(fmt.Sprintf("* %s: %s (%s)\n", shortCommitSHA(commit.SHA), firstLine, commit.Commit.Author.Name))
+	}
+	return changelog.String()
+}
 
+func fetchGitHubCompare(owner, repo, compareRange string) (GitHubCompareResponse, int, error) {
+	var compareResp GitHubCompareResponse
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/compare/%s", owner, repo, compareRange)
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to build GitHub request: %w", err)
+		return compareResp, 0, fmt.Errorf("failed to build GitHub request: %w", err)
 	}
 	setDefaultHTTPHeaders(req)
 	if tok := githubToken(); tok != "" {
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
-
 	resp, err := newHTTPClient().Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch changelog from GitHub: %w", err)
+		return compareResp, 0, fmt.Errorf("failed to fetch changelog from GitHub: %w", err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned non-200 status: %s", resp.Status)
+		discardBody(resp)
+		return compareResp, resp.StatusCode, nil
 	}
-
-	var compareResp GitHubCompareResponse
 	if err := json.NewDecoder(resp.Body).Decode(&compareResp); err != nil {
-		return "", fmt.Errorf("failed to decode GitHub API response: %w", err)
+		return compareResp, resp.StatusCode, fmt.Errorf("failed to decode GitHub API response: %w", err)
+	}
+	return compareResp, resp.StatusCode, nil
+}
+
+// getChangelog fetches upstream commits between two module versions via the module proxy and GitHub.
+func getChangelog(modulePath, fromVersion, toVersion string) (string, error) {
+	proxy := NewGoProxy(config.ModuleProxy)
+	fromInfo, err := proxy.FetchVersionInfo(modulePath, fromVersion)
+	if err != nil {
+		return "", err
+	}
+	toInfo, err := proxy.FetchVersionInfo(modulePath, toVersion)
+	if err != nil {
+		return "", err
+	}
+	owner, repo, ok := githubRepoFromOriginURL(toInfo.Origin.URL)
+	if !ok {
+		owner, repo, ok = githubRepoFromOriginURL(fromInfo.Origin.URL)
+	}
+	if !ok {
+		return "", nil
 	}
 
-	var changelog strings.Builder
-	for _, commit := range compareResp.Commits {
-		firstLine := strings.Split(commit.Commit.Message, "\n")[0]
-		changelog.WriteString(fmt.Sprintf("* %s: %s (%s)\n", shortCommitSHA(commit.SHA), firstLine, commit.Commit.Author.Name))
+	compareRange := fromVersion + "..." + toVersion
+	compareResp, status, err := fetchGitHubCompare(owner, repo, compareRange)
+	if err != nil {
+		return "", err
 	}
-
-	return changelog.String(), nil
+	if status != http.StatusOK && fromInfo.Origin.Hash != "" && toInfo.Origin.Hash != "" {
+		compareRange = fromInfo.Origin.Hash + "..." + toInfo.Origin.Hash
+		compareResp, status, err = fetchGitHubCompare(owner, repo, compareRange)
+		if err != nil {
+			return "", err
+		}
+	}
+	if status != http.StatusOK {
+		return "", fmt.Errorf("GitHub API returned non-200 status: %d", status)
+	}
+	return formatGitHubCompareCommits(compareResp.Commits), nil
 }
 
 // formatModuleChangelog returns a changelog section for one module bump.

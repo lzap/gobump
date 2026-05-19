@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"slices"
@@ -12,6 +14,21 @@ import (
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
+
+// moduleVersionOrigin is the VCS origin recorded by the module proxy for a release.
+type moduleVersionOrigin struct {
+	VCS  string `json:"VCS"`
+	URL  string `json:"URL"`
+	Hash string `json:"Hash"`
+	Ref  string `json:"Ref"`
+}
+
+// moduleVersionInfo is the JSON body of a module proxy @v/VERSION.info response.
+type moduleVersionInfo struct {
+	Version string              `json:"Version"`
+	Time    string              `json:"Time"`
+	Origin  moduleVersionOrigin `json:"Origin"`
+}
 
 type GoProxy struct {
 	baseURL string
@@ -112,4 +129,37 @@ func (p *GoProxy) FetchVersions(modName string, version string) ([]module.Versio
 	slices.Reverse(versions)
 
 	return versions, nil
+}
+
+// FetchVersionInfo returns proxy metadata for a single module version.
+func (p *GoProxy) FetchVersionInfo(modPath, version string) (moduleVersionInfo, error) {
+	var info moduleVersionInfo
+	escaped, err := module.EscapePath(modPath)
+	if err != nil {
+		return info, fmt.Errorf("failed to escape module path: %w", err)
+	}
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+		fmt.Sprintf("%s/%s/@v/%s.info", p.baseURL, escaped, version), nil)
+	if err != nil {
+		return info, fmt.Errorf("failed to build request: %w", err)
+	}
+	setDefaultHTTPHeaders(req)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return info, fmt.Errorf("failed to fetch version info: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return info, fmt.Errorf("failed to fetch version info: %s", resp.Status)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return info, fmt.Errorf("failed to decode version info: %w", err)
+	}
+	return info, nil
+}
+
+// discardBody drains and closes a response body when the caller does not need it.
+func discardBody(resp *http.Response) {
+	io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
 }
