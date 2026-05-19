@@ -166,7 +166,7 @@ Action inputs:
 * `token`: The GitHub token (used for pull requests and, when changelog is enabled with `gist` output, for creating the Gist; the tool reads `GITHUB_TOKEN` or `GH_TOKEN`).
 * `labels`: Comma-separated GitHub PR labels.
 * `no_git`: When `true`, passes `-no-git` so gobump does not run any git commands (per-dependency commits or reset/clean).
-* `user_name` / `user_email`: Git author identity for per-dependency commits. CI runners often have no global `user.name` / `user.email`; gobump sets these in the local repository before each commit.
+* `user_name` / `user_email`: Git author identity for per-dependency commits (defaults: `Schutzbot` / `schutzbot@gmail.com`). CI runners often have no global `user.name` / `user.email`; gobump sets these in the local repository before each commit.
 
 Tip: When building or testing in a container, use `-buildvcs=false` to avoid `git: detected dubious ownership in repository` permissions errors. Alternatively, set the `git config --system --add safe.directory /path` config option.
 
