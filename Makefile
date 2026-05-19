@@ -12,6 +12,9 @@ tidy:
 	go run .
 	go mod tidy
 
+bump:
+	go run .
+
 # Tag next v1.<minor>.0, push, warm proxy (see scripts/release.sh).
 release:
 	@bash scripts/release.sh
